@@ -307,6 +307,8 @@ textarea{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:
     <p>A mock draft engine where the other eleven managers actually think differently. Every opponent draws a strategy, reads position runs, and swings on players the industry disagrees about. Re-roll the room as many times as you want.</p>
   </div>
 
+  <div id="resumeCard" class="hide" style="margin-bottom:18px"></div>
+
   <div class="setup-grid">
     <div class="card panel">
       <span class="eyebrow">League</span>
@@ -933,6 +935,33 @@ function summarizeDraft(grade,rank){
     valueLeft,couldWait,clean,qbRd:firstRd('QB'),kRd:firstRd('K'),roomQbRd:+roomQbRd.toFixed(1),maxBye};
 }
 
+/* ============ autosave ============
+   An in-progress draft is serialized by PLAYER NAME, not index, so a resume still
+   works even if the ADP/news data underneath was refreshed in the meantime.     */
+function draftSnapshot(){
+  return {v:2, mode:S.mode, teams:S.teams, scoring:S.scoring, snake:S.snake,
+    superflex:S.superflex, myIdx:S.myIdx, roster:{...S.roster}, chaos:S.chaos,
+    spread:S.spread, seed:S.seed, board:S.board||[],
+    names:G.teams.map(t=>t.name),
+    picks:G.picks.map(pk=>G.byId[pk.pid].name), ts:Date.now()};
+}
+function restoreDraft(snap){
+  Object.assign(S,{mode:snap.mode,teams:snap.teams,scoring:snap.scoring,snake:snap.snake,
+    superflex:snap.superflex,myIdx:snap.myIdx,roster:{...snap.roster},chaos:snap.chaos,
+    spread:snap.spread,seed:snap.seed,board:snap.board||[]});
+  const r=S.roster;
+  S.rounds=r.QB+r.RB+r.WR+r.TE+r.FLEX+r.SFLEX+r.K+r.DST+r.BN;
+  initDraft();
+  snap.names.forEach((n,i)=>{if(G.teams[i]&&n)G.teams[i].name=n;});
+  const byN={}; G.pool.forEach(p=>{byN[normName(p.name)]=p;});
+  for(const nm of snap.picks){
+    const p=byN[normName(nm)];
+    if(!p||!G.avail.has(p.i)) return false; // pool changed underneath; refuse a corrupt resume
+    commitPick(p.i);
+  }
+  return true;
+}
+
 /* ============ settings ============ */
 S={mode:'sim',teams:12,scoring:'half',snake:true,superflex:false,myIdx:5,
    roster:{QB:1,RB:2,WR:2,TE:1,FLEX:1,SFLEX:0,K:1,DST:1,BN:6},
@@ -981,6 +1010,7 @@ function syncSetup(){
   $('setupSummary').textContent=`${S.teams}-team ${S.scoring==='half'?'half-PPR':S.scoring==='ppr'?'full PPR':'standard'}${S.superflex?' superflex':''} \u00b7 pick ${S.myIdx+1} \u00b7 ${S.rounds} rounds \u00b7 ${S.mode==='live'?'live co-pilot: you enter every pick':CHAOSWORD(S.chaos).toLowerCase()+' room'}`;
   $('btnStart').textContent=S.mode==='live'?'Start Live Draft':'Start Mock Draft';
   renderHistory();
+  renderResume();
   const poolN=poolCountFor(S); // format-aware: each scoring type has its own ranked universe
   const capRounds=Math.floor(poolN/S.teams);
   syncBoardStat();
@@ -988,6 +1018,29 @@ function syncSetup(){
   $('btnStart').disabled=!ok;
   if(S.rounds<4||S.rounds>22)$('setupSummary').textContent='Roster must total between 4 and 22 rounds.';
   else if(S.rounds>capRounds)$('setupSummary').textContent=`Only ${poolN} ranked players available. Trim to ${capRounds} rounds for ${S.teams} teams.`;
+}
+function renderResume(){
+  const el=$('resumeCard'); if(!el) return;
+  let snap=null; try{snap=JSON.parse(localStorage.getItem('wr-autosave'));}catch(e){}
+  if(!(snap&&snap.picks&&snap.picks.length)){el.classList.add('hide');return;}
+  el.classList.remove('hide');
+  const age=Math.round((Date.now()-(snap.ts||Date.now()))/60000);
+  el.innerHTML=`<button class="btn btn-primary" id="btnResume" style="width:100%;justify-content:center">
+      Resume your ${snap.mode==='live'?'LIVE draft':'draft'} in progress: ${snap.picks.length} picks entered${age>0?' \u00b7 '+(age<60?age+' min ago':Math.round(age/60)+' hr ago'):''}
+    </button>
+    <button class="btn btn-sm" id="btnDiscardResume" style="width:100%;margin-top:7px;justify-content:center">Discard it and start fresh</button>`;
+  $('btnResume').onclick=()=>{
+    if(restoreDraft(snap)){
+      show('draft'); $('boardPanel').classList.add('hide');
+      query=''; $('search').value=''; filterPos='ALL'; syncFilters();
+      railTab='advice'; syncTabs(); window.scrollTo(0,0); render();
+      if(S.mode!=='live') runAI();
+      toast('Draft restored: '+snap.picks.length+' picks replayed.');
+    } else {
+      toast('Could not resume: player data changed since that draft.');
+      lsSet('wr-autosave',null); renderResume();
+    }};
+  $('btnDiscardResume').onclick=()=>{lsSet('wr-autosave',null);renderResume();};
 }
 function randSeed(){return Math.random().toString(36).slice(2,8).toUpperCase();}
 function syncBoardStat(){
@@ -1015,6 +1068,7 @@ function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('on');
 
 function render(){
   if(G.cur>=G.total){renderResults();return;}
+  if(G.cur>0) lsSet('wr-autosave',draftSnapshot());
   const n=G.cur,ti=teamAtPick(n),team=G.teams[ti],mine=ti===S.myIdx;
   $('cbRound').textContent=`Rd ${roundOf(n)} \u00b7 Pk ${slotOf(n)}`;
   $('cbOverall').textContent=n+1; $('cbTotal').textContent=G.total;
@@ -1360,6 +1414,7 @@ function renderResults(){
   const rev=reviewPicks();
   const sum=summarizeDraft(grade,rank);
   saveToLog(sum);
+  lsSet('wr-autosave',null);
   const totalEdge=picks.reduce((a,p)=>a+p.edge,0);
   const steals=picks.filter(p=>p.edge>12).sort((a,b)=>b.edge-a.edge);
   const reaches=picks.filter(p=>p.edge<-12).sort((a,b)=>a.edge-b.edge);
@@ -1464,6 +1519,7 @@ function renderResults(){
 
 /* ============ boot ============ */
 function begin(){
+  lsSet('wr-autosave',null);
   initDraft(); show('draft'); $('boardPanel').classList.add('hide');
   query=''; $('search').value=''; filterPos='ALL'; syncFilters();
   railTab='advice'; syncTabs();
