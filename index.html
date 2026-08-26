@@ -244,6 +244,32 @@ textarea{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:
 .delta{font-family:var(--disp);font-weight:700;font-size:16px;white-space:nowrap}
 .delta.pos{color:var(--good)}.delta.neg{color:var(--bad)}
 
+/* ---------- advice tab ---------- */
+.rec{display:block;width:100%;text-align:left;padding:8px 0;border-bottom:1px solid var(--line-soft);cursor:pointer;border-radius:0}
+.rec:hover{background:var(--raised)}
+.rec:last-child{border-bottom:0}
+.rec .top{display:flex;align-items:baseline;gap:8px}
+.rec .nm{font-family:var(--disp);font-weight:700;font-size:17px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rec .adp{font-family:var(--disp);font-weight:700;font-size:13px;color:var(--ink-3)}
+.why{font-size:12px;color:var(--ink-2);line-height:1.45;margin-top:2px}
+.why b{color:var(--ink)}
+.cliff{display:grid;grid-template-columns:40px 1fr auto;gap:9px;align-items:baseline;padding:4px 0;font-size:12.5px;border-bottom:1px solid var(--line-soft)}
+.cliff:last-child{border-bottom:0}
+.cliff .cnt{font-family:var(--disp);font-weight:700;font-size:14px}
+.cliff.hot .cnt,.cliff.hot .p{color:var(--bad)}
+.runban{background:var(--bad-soft);border:1px solid var(--bad);color:var(--bad);border-radius:7px;padding:7px 11px;font-size:12.5px;font-weight:600;margin-bottom:10px}
+.waitrow{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;padding:4px 0;border-bottom:1px solid var(--line-soft)}
+.waitrow:last-child{border-bottom:0}
+.hint-live{font-size:12px;color:var(--ink-3);margin-bottom:9px;line-height:1.4}
+.verdict-chip{font-family:var(--disp);font-weight:700;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;padding:1px 7px;border-radius:4px;white-space:nowrap}
+.verdict-chip.good{background:var(--good-soft);color:var(--good);border:1px solid var(--good)}
+.verdict-chip.left{background:var(--bad-soft);color:var(--bad);border:1px solid var(--bad)}
+.verdict-chip.wait{background:var(--warn-soft);color:var(--warn);border:1px solid var(--warn)}
+.histrow{display:flex;gap:9px;align-items:baseline;font-size:13px;padding:4px 0;border-bottom:1px solid var(--line-soft)}
+.histrow:last-child{border-bottom:0}
+.histrow .g{font-family:var(--disp);font-weight:700;font-size:16px;min-width:26px;color:var(--accent)}
+.histrow .m{color:var(--ink-3);font-size:12px;margin-left:auto;white-space:nowrap}
+
 /* ---------- toast ---------- */
 .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 20px;border-radius:100px;font-weight:600;font-size:14px;box-shadow:var(--shadow-lg);z-index:100;pointer-events:none;opacity:0;transition:opacity .2s}
 .toast.on{opacity:1}
@@ -285,6 +311,10 @@ textarea{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:
     <div class="card panel">
       <span class="eyebrow">League</span>
       <div class="field">
+        <label>Mode</label>
+        <div class="seg" id="segMode"></div>
+      </div>
+      <div class="field">
         <label>Teams</label>
         <div class="seg" id="segTeams"></div>
       </div>
@@ -316,7 +346,7 @@ textarea{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:
       </div>
     </div>
 
-    <div class="card panel">
+    <div class="card panel" id="roomCard">
       <span class="eyebrow">The Room</span>
       <div class="field">
         <label>Unpredictability <span class="hint">: how far opponents stray from ADP</span></label>
@@ -333,7 +363,7 @@ textarea{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:
       </div>
     </div>
 
-    <div class="card panel">
+    <div class="card panel" id="seedCard">
       <span class="eyebrow">Repeatability</span>
       <div class="field">
         <label>Draft seed <span class="hint">: same seed and settings replay the same room</span></label>
@@ -348,6 +378,8 @@ textarea{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:
       </p>
     </div>
   </div>
+
+  <div class="card panel hide" id="histCard" style="margin-top:16px"></div>
 
   <div class="card panel" style="margin-top:16px">
     <span class="eyebrow">Your Board <span class="opt">optional</span></span>
@@ -412,7 +444,8 @@ textarea{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:
     </div>
     <aside class="rail card" id="rail">
       <div class="tabs" id="railTabs">
-        <button data-t="roster" aria-selected="true">My Team</button>
+        <button data-t="advice" aria-selected="true">Advice</button>
+        <button data-t="roster" aria-selected="false">My Team</button>
         <button data-t="feed" aria-selected="false">Feed</button>
         <button data-t="league" aria-selected="false">Room</button>
       </div>
@@ -438,6 +471,8 @@ const ADPMETA='11,893 drafts \u00b7 ADP Aug 18-23 \u00b7 news Aug 25';
    (Aug 23+), meaning the market price does not reflect it yet.            */
 const NEWS={"Jayden Higgins":{"t":"OUT","d":198,"n":"Tore ACL in Aug 18 joint practice; out for the 2026 season (Aug 18)","f":0},"Zach Charbonnet":{"t":"OUT","d":218,"n":"On PUP rehabbing torn ACL; Week 1 very unlikely, return projected around late Nov (Aug 24)","f":1},"Jordyn Tyson":{"t":"OUT","d":87,"n":"Hamstring injury Aug 13; out about 2 months, likely to open season on IR (Aug 25)","f":0},"Brandon Aiyuk":{"t":"OUT","d":214,"n":"Not cleared from 2025 knee reconstruction; on reserve list, away from team (Aug 3)","f":0},"Alvin Kamara":{"t":"INJ","d":72,"n":"Grade 2 MCL sprain in Aug 18 joint practice; out at least a month, will miss Week 1 (Aug 19)","f":0},"Ashton Jeanty":{"t":"INJ","d":21,"n":"Low ankle sprain in practice Aug 24; not long term but Week 1 status uncertain (Aug 24)","f":1},"Kyle Monangai":{"t":"INJ","d":40,"n":"Hyperextended knee in practice; expected to miss multiple weeks, Week 1 in doubt (Aug 25)","f":1},"Isiah Pacheco":{"t":"INJ","d":35,"n":"MCL sprain around Aug 12; latest reports say 3-plus weeks, Week 1 in doubt (Aug 24)","f":0},"James Conner":{"t":"INJ","d":53,"n":"Foot injury, out 2-3 weeks of camp; listed questionable for Week 1 (Aug 23)","f":0},"Luther Burden III":{"t":"INJ","d":21,"n":"Groin strain Aug 8; missing preseason, out roughly 2-3 more weeks, hopeful for Week 1 (Aug 24)","f":0},"Makai Lemon":{"t":"INJ","d":37,"n":"Hamstring since early Aug; has missed most of camp with no firm return date (Aug 16)","f":0},"Alec Pierce":{"t":"INJ","d":21,"n":"March ankle surgery, on PUP with atrophy; Week 1 chances dimming, may practice soon (Aug 25)","f":1},"Keon Coleman":{"t":"INJ","d":33,"n":"Foot injury, in walking boot; missed two preseason games, Week 1 uncertain (Aug 24)","f":0},"Khalil Shakir":{"t":"INJ","d":27,"n":"Undisclosed lower leg injury; no practice since Aug 18, Week 1 questionable (Aug 24)","f":0},"Tank Dell":{"t":"INJ","d":42,"n":"Still working back from late 2024 knee reconstruction; return window 1-4 plus weeks (Aug 24)","f":1},"Tucker Kraft":{"t":"INJ","d":27,"n":"Off PUP, practicing again after 2025 ACL tear; Week 1 possible with snap limits (Aug 25)","f":0},"Emeka Egbuka":{"t":"INJ","d":17,"n":"Toe sprain; DNP Aug 25, called day-to-day to week-to-week, Week 1 readiness unclear (Aug 25)","f":1},"Breece Hall":{"t":"INJ","d":21,"n":"Groin strain, sidelined 2-3 weeks in camp; expected ready for season opener (Aug 25)","f":0},"Patrick Mahomes":{"t":"QUES","d":12,"n":"Rehabbing 2025 torn ACL; no camp practices missed, Week 1 on track but not locked (Aug 25)","f":0},"Malik Nabers":{"t":"QUES","d":7,"n":"Rehabbing 2025 ACL and meniscus tear; limited in camp but on track for Week 1 (Aug 25)","f":0},"George Kittle":{"t":"QUES","d":13,"n":"Activated off PUP Aug 23 in Achilles rehab; ahead of schedule, W1 snap limits likely (Aug 23)","f":1},"Puka Nacua":{"t":"QUES","d":5,"n":"Groin injury; out of practice Aug 25, day-to-day, Week 1 status being monitored (Aug 25)","f":1},"Mike Evans":{"t":"DOWN","d":11,"n":"Quad strain kept him out; Stribling surging with SF starters absent (Aug 18)","f":1},"Kenneth Walker":{"t":"QUES","d":7,"n":"New foot issue, held out of practice Aug 25; no diagnosis announced yet (Aug 25)","f":1},"Sam LaPorta":{"t":"JOB","d":19,"n":"Hip injury; Campbell unsure on Week 1, early season role and targets at risk (Aug 20)","f":1},"Tyler Warren":{"t":"QUES","d":10,"n":"Groin injury; may miss week of practice but expected ready for Week 1 (Aug 25)","f":1},"TreVeyon Henderson":{"t":"CMTE","d":19,"n":"1B behind Stevenson, who took 60-70 pct of camp touches; pass pro concerns (Aug 24)","f":1},"Ja'Marr Chase":{"t":"QUES","d":5,"n":"Hyperextended knee in practice Aug 25; says he is fine, avoided major injury (Aug 25)","f":1},"Michael Pittman Jr.":{"t":"QUES","d":10,"n":"Hamstring strain; expected out 1-2 weeks of camp (Aug 24)","f":0},"Xavier Worthy":{"t":"QUES","d":12,"n":"Shoulder issue; listed day-to-day in camp (Aug 24)","f":0},"DK Metcalf":{"t":"QUES","d":10,"n":"Undisclosed issue; listed day-to-day Aug 24 (Aug 24)","f":0},"Quentin Johnston":{"t":"QUES","d":12,"n":"Lower body issue; day-to-day in camp (Aug 24)","f":0},"Quinshon Judkins":{"t":"QUES","d":6,"n":"Undisclosed issue; considered minimal concern (Aug 24)","f":0},"Josh Jacobs":{"t":"SUSP","d":27,"n":"May arrest unresolved; suspension still on table per Schefter; no charges yet (Aug 21)","f":0},"DeVonta Smith":{"t":"QUES","d":7,"n":"Hamstring since early Aug; day-to-day, expected for Week 1 (Aug 24)","f":0},"Rachaad White":{"t":"CMTE","d":26,"n":"Buried in WAS multi back rotation with Croskey-Merritt and Kaytron Allen; Hamstring; day-to-day in camp (Aug 24)","f":1},"Jacory Croskey-Merritt":{"t":"CMTE","d":27,"n":"WAS multi back system; rookie Kaytron Allen got 23 preseason carries (Aug 24)","f":1},"Carnell Tate":{"t":"QUES","d":7,"n":"Stiffness; minimal concern per latest report (Aug 24)","f":1},"Jakobi Meyers":{"t":"QUES","d":7,"n":"Hand issue; minimal concern (Aug 24)","f":0},"Kenyon Sadiq":{"t":"JOB","d":35,"n":"Hernia sidelines rookie; Jelani Woods gaining TE reps and Geno praise (Aug 7)","f":0},"Parker Washington":{"t":"QUES","d":6,"n":"Undisclosed issue; back participating in practice Aug 25 (Aug 25)","f":1},"Jeremiyah Love":{"t":"CMTE","d":17,"n":"High ankle sprain ends his preseason; Hackett planning committee anyway (Aug 17)","f":0},"Chuba Hubbard":{"t":"CMTE","d":37,"n":"Canales: committee with Brooks to open season; workhorse role gone (Aug 18)","f":0},"Christian McCaffrey":{"t":"QUES","d":3,"n":"Managed for tightness in camp; precautionary, Week 1 not seen in danger (Aug 24)","f":0},"Saquon Barkley":{"t":"QUES","d":4,"n":"Left foot checked at Aug 13 practice; returned same day, workload managed (Aug 13)","f":0},"A.J. Brown":{"t":"QUES","d":4,"n":"Dislocated left thumb around Aug 13; kept practicing, no absence expected (Aug 13)","f":0},"Jaylen Waddle":{"t":"QUES","d":5,"n":"Hamstring strain Aug 5; back at practice Aug 24, team drills Aug 25, trending to play (Aug 24)","f":1},"Rashee Rice":{"t":"QUES","d":4,"n":"Offseason knee cleanup surgery; returned to 11-on-11 Aug 11, ramping up in camp (Aug 11)","f":0},"Chris Olave":{"t":"QUES","d":4,"n":"Left practice Aug 25 after hard fall on deep ball; coach said he is all good (Aug 25)","f":1},"Terrance Ferguson":{"t":"QUES","d":11,"n":"Missed Aug 25 practice with soreness, worked out to the side (Aug 25)","f":1},"Xavier Legette":{"t":"JOB","d":27,"n":"Former R1 pick down to WR3 battle vs David Moore; Legette favored (Aug 3)","f":0},"Ty Johnson":{"t":"QUES","d":18,"n":"Lower leg injury, out since Aug 18; resumed running Aug 25, questionable Week 1 (Aug 25)","f":1},"Josh Downs":{"t":"JOB","d":17,"n":"Keenan Allen signing diminishes his slot role per camp reporting (Aug 18)","f":1},"Jalen McMillan":{"t":"QUES","d":15,"n":"Knee issue; not seen at practice Aug 25 (Aug 25)","f":1},"Cam Skattebo":{"t":"CMTE","d":27,"n":"New staff installing three back rotation; lost workhorse role from last season (Aug 24)","f":1},"Travis Hunter":{"t":"JOB","d":54,"n":"CB first now: camp snaps 116 DEF vs 61 OFF; Coen calls him a 3A 3B receiver (Aug 18)","f":0},"Chase Brown":{"t":"CMTE","d":14,"n":"Splitting early downs with Samaje Perine again per preseason usage (Aug 24)","f":1},"Omarion Hampton":{"t":"DOWN","d":6,"n":"OC McDaniel plans hot hand rotation with Vidal and Mitchell, which caps his volume (Aug 12)","f":0},"DJ Moore":{"t":"CMTE","d":19,"n":"Four WR rotation caps routes in Buffalo everybody eats offense (Aug 24)","f":1},"Courtland Sutton":{"t":"DOWN","d":14,"n":"Waddle emerging as the DEN WR1 and rookie Bryant won WR3; target tree now crowded (Aug 18)","f":0},"Jaylen Warren":{"t":"CMTE","d":18,"n":"Dowdle expected to cut into his receiving work in split PIT backfield (Aug 24)","f":1},"Tony Pollard":{"t":"CMTE","d":20,"n":"1A 1B with Spears, maybe alternating drives; Spears out routed him in opener (Aug 17)","f":1},"RJ Harvey":{"t":"CMTE","d":33,"n":"Three way Denver committee; Dobbins matched his carries, Coleman drafted in 4th (Aug 18)","f":0},"Tyrone Tracy Jr.":{"t":"JOB","d":58,"n":"Fumble plus demotion behind Devin Singletary and Najee Harris in NYG backfield (Aug 24)","f":1},"Isaac TeSlaa":{"t":"DOWN","d":37,"n":"Played with backups again; zero targets on 16 routes, falling off draft boards (Aug 24)","f":1},"Oronde Gadsden":{"t":"CMTE","d":42,"n":"Njoku signing makes three way TE rotation with Kolar in McDaniel offense (Aug 24)","f":1},"Jerry Jeudy":{"t":"JOB","d":21,"n":"Rookie Denzel Boston emerging as WR1 candidate, cutting into Jeudy standing (Aug 7)","f":1},"Emari Demercado":{"t":"JOB","d":28,"n":"Brashard Smith running away with KC RB2; Demercado roster spot shaky (Aug 7)","f":1},"Jaydon Blue":{"t":"JOB","d":42,"n":"Malik Davis breakout took starter reps in RB2 battle; wide open four man race (Aug 23)","f":1},"Jalen Nailor":{"t":"DOWN","d":23,"n":"Raiders not interested in giving him a starting role; 130th in targets per route (Aug 24)","f":1},"Theo Wease Jr.":{"t":"JOB","d":34,"n":"Rookie Caleb Douglas leapfrogged him; Wease with backups on first depth chart (Aug 11)","f":1},"Mike Washington Jr.":{"t":"UP","d":0,"n":"7.9 YPC on 15 preseason carries; took over first team reps after Jeanty's sprain (Aug 24)","f":1},"Jonathon Brooks":{"t":"CMTE","d":21,"n":"Splitting with Hubbard off second ACL tear; only 9 career carries (Aug 24)","f":1},"Ja'Kobi Lane":{"t":"UP","d":0,"n":"Played all 19 snaps with Ravens starters then rested; starting job all but won (Aug 24)","f":1},"De'Zhaun Stribling":{"t":"UP","d":0,"n":"Caught 11 of 13 targets for 109 yards over two games; worth chasing by round 9 (Aug 24)","f":1},"Caleb Douglas":{"t":"UP","d":0,"n":"Played all 14 first team snaps in the opener; dark horse for Miami No. 1 WR job (Aug 25)","f":1},"Jadarian Price":{"t":"CMTE","d":18,"n":"RB2 behind Holani; role shrinks more when Charbonnet returns from ACL (Aug 12)","f":0},"Tyler Allgeier":{"t":"UP","d":0,"n":"Now leads the Arizona depth chart with Love hurt and Conner still sidelined (Aug 15)","f":0},"MarShawn Lloyd":{"t":"UP","d":0,"n":"Started week 2, out-snapped Chris Brooks 9-5 and caught an 11 yard TD (Aug 24)","f":1},"Kaelon Black":{"t":"UP","d":0,"n":"Rookie took 83 pct of snaps with Purdy and worked all three downs; James has rib injury (Aug 24)","f":1},"Woody Marks":{"t":"UP","d":0,"n":"5 touches for 43 yards and a TD with Montgomery rested; backup job trending his way (Aug 24)","f":1},"Braelon Allen":{"t":"UP","d":0,"n":"Played 10 snaps with the starters; clear favorite for the Hall handcuff role (Aug 24)","f":1},"Tyjae Spears":{"t":"UP","d":0,"n":"Took drives 2 and 3 behind Pollard's single drive; set up for a 1A/1B split (Aug 24)","f":1},"Rico Dowdle":{"t":"CMTE","d":18,"n":"Early down half of PIT committee; Warren keeps third down role (Aug 24)","f":1},"Malik Washington":{"t":"UP","d":0,"n":"Played every snap of the first team drive; clear top two Miami WR with Douglas (Aug 24)","f":1},"Rashod Bateman":{"t":"SUSP","d":75,"n":"June arrest surfaced Aug 21; NFL probing, 6+ game ban possible; rookie Lane pushing (Aug 21)","f":0},"Kayshon Boutte":{"t":"UP","d":0,"n":"Traded to HOU Aug 24 after Higgins ACL; path to start opposite Nico Collins (Aug 24)","f":1},"Romeo Doubs":{"t":"UP","d":0,"n":"Boutte dealt to HOU; Doubs entrenched in NE top three with A.J. Brown (Aug 24)","f":1},"Jaylin Noel":{"t":"UP","d":0,"n":"Handling starting slot with Higgins out for year; could also play outside (Aug 15)","f":0},"David Montgomery":{"t":"CMTE","d":16,"n":"Beat report: near 50-50 with Woody Marks all camp; hot hand on game days (Aug 24)","f":1},"Kyler Murray":{"t":"UP","d":0,"n":"Named Vikings Week 1 starter over J.J. McCarthy after camp competition (Aug 11)","f":0},"Malik Willis":{"t":"UP","d":0,"n":"Outplaying Quinn Ewers in MIA QB battle; multiple TD days, Ewers turnover prone (Aug 4)","f":0},"Fernando Mendoza":{"t":"JOB","d":50,"n":"Kirk Cousins confirmed LV starter; No. 1 pick Mendoza running second team (Aug 7)","f":0},"Najee Harris":{"t":"CMTE","d":29,"n":"Signed into NYG three back rotation with Skattebo and Singletary; volume capped (Aug 24)","f":1},"Samaje Perine":{"t":"UP","d":0,"n":"Preseason usage shows him cutting into Chase Brown early down work (Aug 24)","f":1},"Omar Cooper Jr.":{"t":"JOB","d":35,"n":"Zero first team snaps Wk1, one route Wk2; sliding down Jets depth chart (Aug 24)","f":1},"Pat Freiermuth":{"t":"JOB","d":37,"n":"Darnell Washington outsnapping him with starters after $42M extension (Aug 24)","f":1},"Rhamondre Stevenson":{"t":"CMTE","d":11,"n":"1A at about 60 pct of snaps but clear timeshare with Henderson persists (Aug 24)","f":1},"Bhayshul Tuten":{"t":"UP","d":0,"n":"Etienne gone to NO; Tuten primary JAX back, Rodriguez limited to short yardage (Aug 24)","f":1},"Chris Rodriguez Jr.":{"t":"CMTE","d":17,"n":"Early down and red zone package only behind Tuten; little receiving work (Aug 24)","f":1},"J.K. Dobbins":{"t":"CMTE","d":31,"n":"Payton three way committee with Harvey and rookie Coleman caps volume (Aug 18)","f":0},"Jonah Coleman":{"t":"CMTE","d":28,"n":"Rookie folded into three or four way Payton committee; volume capped (Aug 24)","f":1},"Aaron Jones Sr.":{"t":"CMTE","d":21,"n":"Mason takes early downs, Jones third downs; attempts already halved (Aug 18)","f":0},"Jordan Mason":{"t":"CMTE","d":15,"n":"Early down lead but split with Jones caps ceiling; few targets (Aug 18)","f":0},"Bucky Irving":{"t":"CMTE","d":9,"n":"Gainwell takes passing downs, Tucker red zone; Irving lead but capped (Aug 24)","f":1},"Travis Etienne Jr.":{"t":"UP","d":0,"n":"Co RB1 who took most early down reps; Kamara MCL hands him the backfield (Aug 19)","f":0},"Emmett Johnson":{"t":"JOB","d":34,"n":"Coaches rank him 4th back; expected Walker handcuff role slipping to Smith (Aug 7)","f":0},"Calvin Ridley":{"t":"JOB","d":19,"n":"Rookie Carnell Tate listed WR1 over him on first official depth chart (Aug 10)","f":0},"Chimere Dike":{"t":"JOB","d":20,"n":"Listed with backups behind Tate, Ridley, Robinson; KR1 duties instead (Aug 10)","f":0},"Dontayvion Wicks":{"t":"UP","d":0,"n":"Kempski ready to call him Eagles WR2 with rookie Lemon hurt; Hurts praise (Aug 14)","f":0},"Stefon Diggs":{"t":"UP","d":0,"n":"Signed 1 yr WAS deal worth up to $12M; immediate starter beside McLaurin (Aug 5)","f":0},"Antonio Williams":{"t":"JOB","d":21,"n":"Diggs signing pushes rookie down WR2 and slot pecking order behind McLaurin (Aug 5)","f":0},"Ollie Gordon II":{"t":"JOB","d":11,"n":"Jaylen Wright listed RB2 ahead of Gordon behind Achane on first depth chart (Aug 11)","f":0},"David Njoku":{"t":"CMTE","d":16,"n":"Part of deep three way LAC TE room with Gadsden and Kolar (Aug 24)","f":1},"Isaiah Likely":{"t":"UP","d":0,"n":"Listed TE1 over Theo Johnson on first NYG depth chart after $40M deal (Aug 11)","f":0},"Kyren Williams":{"t":"CMTE","d":8,"n":"Timeshare with Corum continues; McVay vows Corum big part of offense (Jul 29)","f":0},"Blake Corum":{"t":"UP","d":0,"n":"McVay: Corum will be a big part of the offense; leaner with strong camp (Jul 29)","f":0},"Adonai Mitchell":{"t":"UP","d":0,"n":"Set to start outside opposite Garrett Wilson; caught both targets Friday (Aug 21)","f":0},"Denzel Boston":{"t":"UP","d":0,"n":"Rookie emerging as CLE WR1 candidate; Solak: has what it takes to be a WR1 (Aug 7)","f":0},"Troy Franklin":{"t":"JOB","d":35,"n":"Displaced to WR5 range; Waddle trade plus Bryant and Mims passing him (Aug 6)","f":0},"Pat Bryant":{"t":"UP","d":0,"n":"Won Denver WR3 job in camp; became a most trusted Nix target (Aug 6)","f":0},"Jordan James":{"t":"JOB","d":31,"n":"Broken rib; rookie Kaelon Black now favorite for SF RB2 job (Aug 19)","f":0},"Deebo Samuel Sr.":{"t":"UP","d":0,"n":"Signed after Pearsall season ending injury; early first team reps in SF (Aug 7)","f":0},"Keenan Allen":{"t":"UP","d":0,"n":"Signed with IND; takes slot work that had belonged to Josh Downs (Aug 18)","f":0},"Malachi Fields":{"t":"UP","d":0,"n":"Rookie made early claim for NYG No. 2 receiver job; locked into rotation (Aug 8)","f":0},"Devaughn Vele":{"t":"JOB","d":21,"n":"Fighting three drafted rookies for NO WR3; Olave and Tyson locked in (Aug 3)","f":0},"Trey Smack":{"t":"UP","d":0,"n":"All rivals cut; lone GB kicker went 4 for 4 Sunday, job secure (Aug 23)","f":1},"Germie Bernard":{"t":"UP","d":0,"n":"Rookie earning first team reps with Rodgers amid Metcalf and Pittman absences (Jul 31)","f":0}};
 const P=RAW.map((r,i)=>({i,name:r[0],pos:r[1],team:r[2],bye:r[3],f:{ppr:r[4],half:r[5],std:r[6]}}));
+const SITLBL={OUT:'OUT',INJ:'INJURY',QUES:'DAY-TO-DAY',JOB:'JOB RISK',CMTE:'COMMITTEE',SUSP:'SUSPENDED',HOLD:'HOLDOUT',DOWN:'FADING',UP:'RISER'};
+const SITCLS={OUT:'out',SUSP:'out',INJ:'inj',QUES:'inj',JOB:'role',CMTE:'role',HOLD:'role',DOWN:'role',UP:'up'};
 const MAXPOS={QB:2,RB:6,WR:7,TE:2,K:1,DST:1};
 const ALLPOS=['QB','RB','WR','TE','K','DST'];
 const poolCountFor=(S)=>P.filter(p=>(p.f[S.scoring]||p.f.ppr)&&(p.pos!=='K'||S.roster.K>0)&&(p.pos!=='DST'||S.roster.DST>0)).length;
@@ -473,8 +508,10 @@ function buildPool(S){
   ALLPOS.forEach(pos=>{let n=0;pool.filter(p=>p.pos===pos).forEach(p=>{p.posRank=++n;});});
   ALLPOS.forEach(pos=>{
     const g=pool.filter(p=>p.pos===pos); let t=1;
-    const thr=pos==='QB'||pos==='TE'?9:pos==='K'||pos==='DST'?12:7;
-    g.forEach((p,idx)=>{if(idx>0&&(p.v-g[idx-1].v)>thr+g[idx-1].v*0.045)t++;p.tier=t;});
+    // break sizes tuned to each position's real ADP gap structure: QB/TE cliff hard,
+    // RB/WR run tighter so tiers of 3-8 emerge instead of one 80-man blob
+    const [base,rate]=pos==='QB'||pos==='TE'?[9,0.045]:pos==='K'||pos==='DST'?[12,0.045]:[3.5,0.02];
+    g.forEach((p,idx)=>{if(idx>0&&(p.v-g[idx-1].v)>base+g[idx-1].v*rate)t++;p.tier=t;});
   });
   return pool;
 }
@@ -791,8 +828,113 @@ function applyBoard(){
   });
 }
 
+/* ============ advice + review logic ============
+   Pure functions shared by the in-draft Advice tab and the post-draft review.
+   Everything is derived from engine state so the advice can never disagree
+   with what the simulator itself believes.                                */
+function tierLeft(p){
+  let n=0;
+  for(const id of G.avail){const q=G.byId[id];
+    if(q.pos===p.pos&&q.tier===p.tier) n++;}
+  return n;
+}
+function tierBoard(){
+  return ['QB','RB','WR','TE'].map(pos=>{
+    const avail=[...G.avail].map(id=>G.byId[id]).filter(q=>q.pos===pos&&!q.depth);
+    if(!avail.length) return {pos,count:0,tier:0,nextAdp:null};
+    const t0=Math.min(...avail.map(q=>q.tier));
+    const inT=avail.filter(q=>q.tier===t0);
+    const next=avail.filter(q=>q.tier>t0).sort((a,b)=>a.v-b.v)[0];
+    return {pos,tier:t0,count:inT.length,nextAdp:next?next.v:null};
+  });
+}
+function byeClash(team,bye){
+  if(!bye) return 0;
+  return team.roster.filter(x=>G.byId[x.pid].bye===bye).length;
+}
+function runNow(){
+  const recent=G.picks.slice(-8);
+  if(recent.length<5) return null;
+  const c={};recent.forEach(pk=>{const q=G.byId[pk.pid].pos;c[q]=(c[q]||0)+1;});
+  const top=Object.entries(c).sort((a,b)=>b[1]-a[1])[0];
+  return top&&top[1]>=5?{pos:top[0],n:top[1],of:recent.length}:null;
+}
+function adviceCands(){
+  const me=G.teams[S.myIdx], rd=roundOf(G.cur), picksLeft=S.rounds-rd+1;
+  const out=[];
+  for(const id of G.avail){
+    const p=G.byId[id];
+    const nb=needBonus(me,p.pos,picksLeft,0.9);
+    if(nb===null) continue;
+    const base=(p.mine!=null?p.mine:p.adj);
+    out.push({p,score:base-nb});
+  }
+  out.sort((a,b)=>a.score-b.score);
+  return out;
+}
+function whyLines(p,nxt){
+  const me=G.teams[S.myIdx], out=[];
+  const fall=(G.cur+1)-p.v;
+  if(fall>=6) out.push('falling, '+Math.round(fall)+' picks past ADP');
+  const ns=needState(me);
+  if(ns.hard[p.pos]>0) out.push('fills your open '+(p.pos==='DST'?'D/ST':p.pos)+' slot');
+  else if((p.pos==='RB'||p.pos==='WR'||p.pos==='TE')&&ns.flexLeft>0) out.push('flex fit');
+  const tl=tierLeft(p);
+  if(tl===1) out.push('LAST one in '+p.pos+' tier '+p.tier);
+  else if(tl===2) out.push('one of the last 2 in '+p.pos+' tier '+p.tier);
+  if(nxt>=0&&nxt>G.cur){
+    const g=goneProb(p,G.cur,nxt);
+    out.push(g>=0.45?Math.round(g*100)+'% gone by your next pick'
+                    :Math.round((1-g)*100)+'% chance he is still there next turn');
+  }
+  if(p.news&&p.news.d>0) out.push(SITLBL[p.news.t].toLowerCase()+', docked '+p.news.d);
+  const bc=byeClash(me,p.bye);
+  if(bc>=2) out.push(bc+' of your players already on bye '+p.bye);
+  return out.slice(0,3);
+}
+/* post-draft: what was on the board each time you picked, and what it cost */
+function reviewPicks(){
+  const takenAt={}; G.picks.forEach(pk=>{takenAt[pk.pid]=pk.n;});
+  const mine=G.teams[S.myIdx].roster.map(x=>({pid:x.pid,n:x.n}));
+  const myNs=mine.map(x=>x.n);
+  return mine.map(({pid,n})=>{
+    const p=G.byId[pid];
+    const pv=(p.mine!=null?p.mine:p.adj);
+    let alt=null,altV=1e9;
+    for(const q of G.pool){
+      if(q.i===pid||q.pos==='K'||q.pos==='DST') continue;
+      const tAt=takenAt[q.i];
+      if(tAt!==undefined&&tAt<n) continue;
+      const val=(q.mine!=null?q.mine:q.adj);
+      if(val<pv-6&&val<altV){alt=q;altV=val;}
+    }
+    const later=myNs.filter(x=>x>n);
+    const nxt=later.length?Math.min(...later):-1;
+    const g=nxt>=0?goneProb(p,n,nxt):1;
+    return {p,n,alt,altTakenAt:alt?takenAt[alt.i]:undefined,g};
+  });
+}
+function summarizeDraft(grade,rank){
+  const rev=reviewPicks();
+  const valueLeft=rev.filter(r=>r.alt).length;
+  const couldWait=rev.filter(r=>!r.alt&&r.g<0.35).length;
+  const clean=rev.length-valueLeft-couldWait;
+  const firstRd=pos=>{const x=G.teams[S.myIdx].roster.find(r=>G.byId[r.pid].pos===pos);return x?roundOf(x.n):0;};
+  const othersQB=G.teams.filter(t=>!t.mine).map(t=>{
+    const x=t.roster.find(r=>G.byId[r.pid].pos==='QB');return x?roundOf(x.n):S.rounds;});
+  const roomQbRd=othersQB.length?othersQB.reduce((a,b)=>a+b,0)/othersQB.length:0;
+  const {slots}=buildLineup(G.teams[S.myIdx]);
+  const byes={};slots.forEach(s=>{if(s.p&&s.p.bye)byes[s.p.bye]=(byes[s.p.bye]||0)+1;});
+  const maxBye=Math.max(0,...Object.values(byes));
+  const picks=G.teams[S.myIdx].roster.map(x=>({e:(x.n+1)-G.byId[x.pid].v}));
+  return {mode:S.mode||'sim',scoring:S.scoring,teams:S.teams,slot:S.myIdx+1,grade,rank,
+    edge:Math.round(picks.reduce((a,p)=>a+p.e,0)),
+    steals:picks.filter(p=>p.e>12).length,reaches:picks.filter(p=>p.e<-12).length,
+    valueLeft,couldWait,clean,qbRd:firstRd('QB'),kRd:firstRd('K'),roomQbRd:+roomQbRd.toFixed(1),maxBye};
+}
+
 /* ============ settings ============ */
-S={teams:12,scoring:'half',snake:true,superflex:false,myIdx:5,
+S={mode:'sim',teams:12,scoring:'half',snake:true,superflex:false,myIdx:5,
    roster:{QB:1,RB:2,WR:2,TE:1,FLEX:1,SFLEX:0,K:1,DST:1,BN:6},
    chaos:30,spread:'normal',speed:'fast',seed:'',rounds:15,board:[],sortBy:'adj'};
 const SPEEDS={instant:0,fast:290,real:950};
@@ -805,6 +947,9 @@ function seg(el,opts,get,set){
     b.onclick=()=>{set(o.v);syncSetup();}; el.appendChild(b);});
 }
 function syncSetup(){
+  seg($('segMode'),[{l:'Practice vs AI',v:'sim'},{l:'Live draft co-pilot',v:'live'}],()=>S.mode,v=>S.mode=v);
+  $('roomCard').classList.toggle('hide',S.mode==='live');
+  $('seedCard').classList.toggle('hide',S.mode==='live');
   seg($('segTeams'),[8,10,12,14].map(v=>({l:v+' tm',v})),()=>S.teams,v=>{S.teams=v;if(S.myIdx>=v)S.myIdx=v-1;});
   seg($('segScoring'),[{l:'PPR',v:'ppr'},{l:'Half',v:'half'},{l:'Standard',v:'std'}],()=>S.scoring,v=>S.scoring=v);
   seg($('segOrder'),[{l:'Snake',v:true},{l:'Linear',v:false}],()=>S.snake,v=>S.snake=v);
@@ -833,7 +978,9 @@ function syncSetup(){
   $('roundsOut').textContent=S.rounds+' rounds';
   $('picksOut').textContent=(S.rounds*S.teams)+' picks';
   $('chaos').value=S.chaos; $('chaosLabel').textContent=CHAOSWORD(S.chaos);
-  $('setupSummary').textContent=`${S.teams}-team ${S.scoring==='half'?'half-PPR':S.scoring==='ppr'?'full PPR':'standard'}${S.superflex?' superflex':''} \u00b7 pick ${S.myIdx+1} \u00b7 ${S.rounds} rounds \u00b7 ${CHAOSWORD(S.chaos).toLowerCase()} room`;
+  $('setupSummary').textContent=`${S.teams}-team ${S.scoring==='half'?'half-PPR':S.scoring==='ppr'?'full PPR':'standard'}${S.superflex?' superflex':''} \u00b7 pick ${S.myIdx+1} \u00b7 ${S.rounds} rounds \u00b7 ${S.mode==='live'?'live co-pilot: you enter every pick':CHAOSWORD(S.chaos).toLowerCase()+' room'}`;
+  $('btnStart').textContent=S.mode==='live'?'Start Live Draft':'Start Mock Draft';
+  renderHistory();
   const poolN=poolCountFor(S); // format-aware: each scoring type has its own ranked universe
   const capRounds=Math.floor(poolN/S.teams);
   syncBoardStat();
@@ -862,8 +1009,6 @@ function syncBoardStat(){
 
 /* ============ draft render ============ */
 let filterPos='ALL',query='';
-const SITLBL={OUT:'OUT',INJ:'INJURY',QUES:'DAY-TO-DAY',JOB:'JOB RISK',CMTE:'COMMITTEE',SUSP:'SUSPENDED',HOLD:'HOLDOUT',DOWN:'FADING',UP:'RISER'};
-const SITCLS={OUT:'out',SUSP:'out',INJ:'inj',QUES:'inj',JOB:'role',CMTE:'role',HOLD:'role',DOWN:'role',UP:'up'};
 function show(id){['setup','draft','results'].forEach(s=>$(s).classList.toggle('hide',s!==id));}
 function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('on');
   clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),1700);}
@@ -874,8 +1019,17 @@ function render(){
   $('cbRound').textContent=`Rd ${roundOf(n)} \u00b7 Pk ${slotOf(n)}`;
   $('cbOverall').textContent=n+1; $('cbTotal').textContent=G.total;
   $('cbOtc').classList.toggle('mine',mine);
-  $('cbWho').textContent=mine?'You are on the clock':team.name;
-  $('cbArch').textContent=mine?'Take a player from the board':team.arch.n+': '+team.arch.b;
+  if(S.mode==='live'){
+    $('cbWho').textContent=mine?'You are on the clock':team.name+' is on the clock';
+    $('cbArch').textContent=mine?'Check the Advice tab, then take your player'
+                                :'Enter their pick as it happens (type to search, Enter takes the top match)';
+  } else {
+    $('cbWho').textContent=mine?'You are on the clock':team.name;
+    $('cbArch').textContent=mine?'Take a player from the board':team.arch.n+': '+team.arch.b;
+  }
+  $('btnSim').classList.toggle('hide',S.mode==='live');
+  $('btnAuto').classList.toggle('hide',S.mode==='live');
+  $('btnUndo').textContent=S.mode==='live'?'Undo pick':'Rewind';
   const nx=nextMyPick(mine?n+1:n);
   $('cbNext').innerHTML=nx<0?'<span style="color:var(--ink-3)">No picks left</span>'
     :`Your ${mine?'next ':''}pick <b>${roundOf(nx)}.${String(slotOf(nx)).padStart(2,'0')}</b> &middot; <b>${nx-n}</b> away`;
@@ -945,14 +1099,22 @@ function renderPool(nextPick){
   });
   el.innerHTML=html;
   el.querySelectorAll('.prow').forEach(row=>{
-    const act=()=>{
-      if(teamAtPick(G.cur)!==S.myIdx){toast('Not your pick. Sim ahead first.');return;}
-      const p=G.byId[+row.dataset.id];
-      commitPick(p.i); toast(`You drafted ${p.name}`); render(); runAI();
-    };
+    const act=()=>draftFromUI(+row.dataset.id);
     row.onclick=act;
     row.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();act();}};
   });
+}
+function draftFromUI(id){
+  const ti=teamAtPick(G.cur), mine=ti===S.myIdx;
+  if(S.mode!=='live'&&!mine){toast('Not your pick. Sim ahead first.');return;}
+  const p=G.byId[id];
+  if(!G.avail.has(id)) return;
+  commitPick(id);
+  toast(mine?`You drafted ${p.name}`:`${G.teams[ti].name}: ${p.name}`);
+  query=''; $('search').value='';
+  render();
+  if(S.mode==='live'){ if(G.cur<G.total) $('search').focus(); }
+  else runAI();
 }
 
 /* ============ lineup solver ============ */
@@ -974,9 +1136,53 @@ function buildLineup(team){
 }
 
 /* ============ rail ============ */
-let railTab='roster';
+let railTab='advice';
+function syncTabs(){$('railTabs').querySelectorAll('button').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.t===railTab)));}
+function renderAdvice(b){
+  if(G.cur>=G.total){b.innerHTML='<div style="color:var(--ink-3);font-size:13px">Draft complete.</div>';return;}
+  const mine=teamAtPick(G.cur)===S.myIdx;
+  const nxt=nextMyPick(mine?G.cur+1:G.cur);
+  const run=runNow();
+  let h='';
+  if(S.mode==='live'&&!mine) h+='<div class="hint-live">Enter picks as they happen: type a few letters in the search box and press Enter. Click a name in the Feed to fix a mistake.</div>';
+  if(run) h+=`<div class="runban">${run.pos} run: ${run.n} of the last ${run.of} picks. ${run.pos==='RB'||run.pos==='WR'?'Decide if you chase it or take the value it leaves behind.':'Do not panic into it.'}</div>`;
+  const cands=adviceCands();
+  if(mine){
+    h+='<div class="rail-h">Best Picks Right Now</div>';
+    cands.slice(0,5).forEach(({p})=>{
+      const why=whyLines(p,nxt);
+      h+=`<button class="rec" data-id="${p.i}">
+        <span class="top"><span class="pos ${p.pos}">${p.pos}${p.posRank}</span><span class="nm">${p.name}</span><span class="adp num">${(p.mine!=null?'#'+p.myRank+' yours':p.v.toFixed(1)+' adp')}</span></span>
+        ${why.length?`<span class="why">${why.join(' &middot; ')}</span>`:''}
+      </button>`;});
+    const safe=cands.slice(0,18).map(c=>c.p)
+      .filter(p=>nxt>=0&&goneProb(p,G.cur,nxt)<0.35).slice(0,3);
+    if(safe.length){
+      h+='<div class="rail-h">Safe To Wait On</div>';
+      safe.forEach(p=>{h+=`<div class="waitrow"><span>${p.name}</span><span style="color:var(--good);font-weight:600">${Math.round((1-goneProb(p,G.cur,nxt))*100)}% still there next turn</span></div>`;});
+    }
+  } else {
+    h+=`<div class="rail-h">Your Turn In ${nxt-G.cur} Picks</div>`;
+    const watch=cands.slice(0,6).map(c=>c.p);
+    watch.sort((a,b)=>goneProb(b,G.cur,nxt)-goneProb(a,G.cur,nxt));
+    watch.forEach(p=>{const g=goneProb(p,G.cur,nxt);
+      h+=`<div class="waitrow"><span><span class="dot ${p.pos}"></span> ${p.name}</span><span style="font-weight:600;color:${g>=0.45?'var(--bad)':'var(--good)'}">${Math.round(g*100)}% gone by your turn</span></div>`;});
+  }
+  h+='<div class="rail-h">Tier Cliffs</div>';
+  tierBoard().forEach(tb=>{
+    if(!tb.count) return;
+    const ns=needState(G.teams[S.myIdx]);
+    const need=ns.hard[tb.pos]>0||((tb.pos!=='QB')&&ns.flexLeft>0);
+    const hot=tb.count<=2&&need;
+    h+=`<div class="cliff ${hot?'hot':''}"><span class="p" style="font-family:var(--disp);font-weight:700;color:var(--${tb.pos.toLowerCase()})">${tb.pos}</span>
+      <span>${tb.count} left in tier ${tb.tier}${hot?' and you still need one':''}</span>
+      <span class="cnt num">${tb.nextAdp?'next tier adp '+tb.nextAdp.toFixed(0):'last tier'}</span></div>`;});
+  b.innerHTML=h;
+  b.querySelectorAll('.rec').forEach(r=>{r.onclick=()=>draftFromUI(+r.dataset.id);});
+}
 function renderRail(){
   const b=$('railBody');
+  if(railTab==='advice'){renderAdvice(b);return;}
   if(railTab==='roster'){
     const me=G.teams[S.myIdx],{slots,bench}=buildLineup(me);
     let h='<div class="rail-h">Starting Lineup</div>';
@@ -1007,10 +1213,18 @@ function renderRail(){
   } else {
     b.innerHTML=G.teams.map(t=>{
       const c=t.counts,chips=ALLPOS.filter(p=>c[p]>0).map(p=>`<span class="cchip" style="color:var(--${p.toLowerCase()})">${p} ${c[p]}</span>`).join('');
+      const nm=S.mode==='live'&&!t.mine
+        ?`<span class="nm" contenteditable="true" spellcheck="false" data-team="${t.id}">${t.name}</span>`
+        :`<span class="nm">${t.name}</span>`;
       return `<div class="oppcard ${t.mine?'mine':''}">
-        <div class="top"><span class="nm">${t.name}</span><span style="font-size:11.5px;color:var(--ink-3)">Slot ${t.id+1}</span></div>
-        <div class="ar">${t.mine?'That is you.':t.arch.n+': '+t.arch.b}</div>
+        <div class="top">${nm}<span style="font-size:11.5px;color:var(--ink-3)">Slot ${t.id+1}</span></div>
+        <div class="ar">${t.mine?'That is you.':S.mode==='live'?'Click the name to rename this manager.':t.arch.n+': '+t.arch.b}</div>
         <div class="cnt">${chips||'<span class="cchip">no picks yet</span>'}</div></div>`;}).join('');
+    b.querySelectorAll('[contenteditable]').forEach(el=>{
+      el.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();el.blur();}};
+      el.onblur=()=>{const t=G.teams[+el.dataset.team];const v=el.textContent.trim();
+        if(v&&v.length<=24)t.name=v; render();};
+    });
   }
 }
 
@@ -1042,6 +1256,7 @@ function renderBoard(target){
 function stopSim(){simming=false;clearTimeout(timer);timer=null;}
 function runAI(){
   stopSim();
+  if(S.mode==='live'){render();return;} // live: every pick is entered by hand
   if(G.cur>=G.total){render();return;}
   if(teamAtPick(G.cur)===S.myIdx){render();return;}
   simming=true;
@@ -1069,6 +1284,39 @@ function simAll(){
     commitPick(pid);
   }
   render();
+}
+
+/* ============ draft log (per-browser, localStorage) ============ */
+function lsGet(k){try{return JSON.parse(localStorage.getItem(k))||[];}catch(e){return [];}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+function saveToLog(sum){
+  const h=lsGet('wr-history'); sum.ts=Date.now(); h.push(sum);
+  lsSet('wr-history',h.slice(-50));
+}
+function renderHistory(){
+  const el=$('histCard'); if(!el) return;
+  const h=lsGet('wr-history');
+  if(!h.length){el.classList.add('hide');return;}
+  el.classList.remove('hide');
+  const last=h.slice(-8).reverse();
+  let habits='';
+  if(h.length>=3){
+    const n=h.length;
+    const avg=k=>h.reduce((a,x)=>a+(x[k]||0),0)/n;
+    const lines=[];
+    if(avg('couldWait')>=1.5) lines.push('You often take players who would have lasted to your next pick. Practice letting one ride.');
+    if(avg('valueLeft')>=2) lines.push('You pass on the board\'s best player about '+avg('valueLeft').toFixed(1)+' times per draft. Check the Advice tab before locking in.');
+    if(avg('reaches')>=2.5) lines.push('You average '+avg('reaches').toFixed(1)+' reaches of 12+ spots per draft.');
+    const qd=h.filter(x=>x.qbRd&&x.roomQbRd);
+    if(qd.length>=3){const d=qd.reduce((a,x)=>a+(x.roomQbRd-x.qbRd),0)/qd.length;
+      if(d>=1.5) lines.push('You draft your QB about '+d.toFixed(1)+' rounds before the room does.');}
+    if(!lines.length) lines.push('No recurring bad habit detected across '+n+' drafts. Keep varying seed and slot.');
+    habits='<div class="rail-h">Habits Across '+n+' Drafts</div>'+lines.slice(0,2).map(l=>'<div style="font-size:13px;color:var(--ink-2);margin-bottom:5px">'+l+'</div>').join('');
+  }
+  el.innerHTML='<span class="eyebrow">Your Draft Log</span>'+
+    last.map(x=>`<div class="histrow"><span class="g">${x.grade}</span>
+      <span>${x.rank}${['st','nd','rd'][((x.rank+90)%100-10)%10-1]||'th'} of ${x.teams} \u00b7 ${x.mode==='live'?'live':'practice'} \u00b7 slot ${x.slot}</span>
+      <span class="m">${x.valueLeft} value left \u00b7 ${x.couldWait} early</span></div>`).join('')+habits;
 }
 
 /* ============ results ============ */
@@ -1109,6 +1357,9 @@ function renderResults(){
   const sd=Math.sqrt(strengths.reduce((a,b)=>a+(b.s-mean)**2,0)/strengths.length)||1;
   const grade=gradeFor((mineS-mean)/sd);
   const picks=me.roster.map(x=>({...G.byId[x.pid],n:x.n,edge:(x.n+1)-G.byId[x.pid].v}));
+  const rev=reviewPicks();
+  const sum=summarizeDraft(grade,rank);
+  saveToLog(sum);
   const totalEdge=picks.reduce((a,p)=>a+p.edge,0);
   const steals=picks.filter(p=>p.edge>12).sort((a,b)=>b.edge-a.edge);
   const reaches=picks.filter(p=>p.edge<-12).sort((a,b)=>a.edge-b.edge);
@@ -1168,6 +1419,31 @@ function renderResults(){
       <span class="meter" style="width:130px"><i style="width:${(x.s/strengths[0].s*100).toFixed(0)}%;background:${x.t.mine?'var(--accent)':'var(--ink-3)'}"></i></span></div>`).join('')}
   </div>
 
+  <div class="card panel" style="margin-bottom:16px"><span class="eyebrow">Pick-By-Pick Review</span>
+    <p style="font-size:13px;color:var(--ink-2);margin:0 0 10px">What the board looked like each time you picked. "Value left" means a clearly better player by this tool's model was still available; "could have waited" means your player probably survived to your next turn.</p>
+    ${rev.map(r=>{
+      const lab=`${roundOf(r.n)}.${String(slotOf(r.n)).padStart(2,'0')}`;
+      let chip,detail;
+      if(r.alt){chip='<span class="verdict-chip left">value left</span>';
+        detail=`${r.alt.name} (${r.alt.pos}${r.alt.posRank}) was there and ${r.altTakenAt!==undefined?'went '+(r.altTakenAt-r.n)+' picks later':'was never drafted'}`;}
+      else if(r.g<0.35){chip='<span class="verdict-chip wait">could have waited</span>';
+        detail=`about ${Math.round((1-r.g)*100)}% to still be there at your next pick`;}
+      else {chip='<span class="verdict-chip good">clean</span>';
+        detail='best available fit at your turn';}
+      return `<div class="vrow"><span style="min-width:0"><span class="nm">${lab} ${r.p.name}</span>
+        <span class="sub">${detail}</span></span>${chip}</div>`;}).join('')}
+    <div class="rail-h">Coach Notes</div>
+    ${(()=>{const notes=[];
+      if(sum.valueLeft>=3) notes.push('You left the board\'s best player behind '+sum.valueLeft+' times. Before each pick, glance at the Advice tab\'s top row.');
+      else if(sum.valueLeft===0) notes.push('Zero value left on the board. Every pick was defensible at the moment you made it.');
+      if(sum.couldWait>=3) notes.push(sum.couldWait+' of your picks would likely have survived to your next turn. Taking the scarcer position first and doubling back is free value.');
+      if(sum.qbRd&&sum.roomQbRd&&sum.roomQbRd-sum.qbRd>=2) notes.push('You took your QB in round '+sum.qbRd+'; the room averaged round '+sum.roomQbRd+'. That gap is usually better spent on RB/WR.');
+      if(sum.maxBye>=4) notes.push(sum.maxBye+' of your starters share one bye week. That is a forfeit-shaped hole; spread the byes.');
+      if(sum.kRd&&sum.kRd<S.rounds-2) notes.push('Kicker in round '+sum.kRd+' costs you a lottery ticket. Last two rounds only.');
+      if(!notes.length) notes.push('A disciplined board: no value left behind, patient at the right spots, byes spread. Raise the difficulty with a wilder room or a worse slot.');
+      return notes.slice(0,4).map(n=>'<div style="font-size:13.5px;color:var(--ink-2);margin-bottom:6px">'+n+'</div>').join('');})()}
+  </div>
+
   <div class="card panel" style="margin-bottom:16px"><span class="eyebrow">Full Draft Board</span>
     <div class="boardwrap"><div class="board" id="boardGrid2"></div></div></div>
 
@@ -1190,6 +1466,7 @@ function renderResults(){
 function begin(){
   initDraft(); show('draft'); $('boardPanel').classList.add('hide');
   query=''; $('search').value=''; filterPos='ALL'; syncFilters();
+  railTab='advice'; syncTabs();
   S.sortBy=G.boardHits?'mine':'adj';
   window.scrollTo(0,0); render(); runAI();
 }
@@ -1200,10 +1477,11 @@ function syncFilters(){
   $('posFilter').innerHTML=['ALL',...ALLPOS].map(p=>`<button class="pf" data-p="${p}" aria-pressed="${p==='ALL'}">${p==='DST'?'D/ST':p}</button>`).join('');
   $('posFilter').querySelectorAll('.pf').forEach(b=>b.onclick=()=>{filterPos=b.dataset.p;syncFilters();render();});
   $('search').oninput=e=>{query=e.target.value;if(G)renderPool(nextMyPick(G.cur));};
+  $('search').addEventListener('keydown',e=>{
+    if(e.key==='Enter'){const r=document.querySelector('.prow');if(r&&query.trim())draftFromUI(+r.dataset.id);}
+    if(e.key==='Escape'){query='';e.target.value='';if(G)renderPool(nextMyPick(G.cur));}});
   $('railTabs').querySelectorAll('button').forEach(b=>b.onclick=()=>{
-    railTab=b.dataset.t;
-    $('railTabs').querySelectorAll('button').forEach(x=>x.setAttribute('aria-selected',String(x===b)));
-    renderRail();});
+    railTab=b.dataset.t; syncTabs(); renderRail();});
   $('chaos').oninput=e=>{S.chaos=+e.target.value;$('chaosLabel').textContent=CHAOSWORD(S.chaos);syncSetup();};
   $('btnSeed').onclick=()=>{S.seed=randSeed();$('seedIn').value=S.seed;};
   $('seedIn').oninput=e=>S.seed=e.target.value.toUpperCase()||'ABC123';
@@ -1212,13 +1490,19 @@ function syncFilters(){
   $('btnBoard').onclick=()=>{const p=$('boardPanel');p.classList.toggle('hide');
     if(!p.classList.contains('hide'))renderBoard();};
   $('btnRail').onclick=()=>{$('rail').scrollIntoView({behavior:'smooth',block:'start'});};
-  $('btnUndo').onclick=()=>{const mp=myPicks().filter(n=>n<G.cur);
+  $('btnUndo').onclick=()=>{
+    if(S.mode==='live'){ if(G.cur>0){rewindTo(G.cur-1);toast('Last pick undone.');} return; }
+    const mp=myPicks().filter(n=>n<G.cur);
     rewindTo(mp.length?mp[mp.length-1]:0);toast('Rewound. Take a different player.');};
   $('btnSim').onclick=()=>runAI();
   $('btnAuto').onclick=()=>{const ti=teamAtPick(G.cur);if(ti!==S.myIdx)return;
     const pid=autoPickFor(G.teams[ti],G.cur);commitPick(pid);
     toast(`Auto-picked ${G.byId[pid].name}`);render();runAI();};
   $('btnQuit').onclick=()=>{stopSim();
+    if(S.mode==='live'){
+      if(G.picks.length>=S.teams&&confirm('End the draft here and see your analysis?')){renderResults();}
+      else if(G.picks.length<S.teams){show('setup');syncSetup();}
+      return;}
     if(G.picks.length>S.teams*2&&confirm('Simulate the rest of the draft and see results?')){simAll();}
     else{show('setup');syncSetup();}};
   document.addEventListener('keydown',e=>{
