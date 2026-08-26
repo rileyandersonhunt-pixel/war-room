@@ -1,0 +1,232 @@
+<title>War Room Field Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --bg:#EEF1F6; --surface:#FFFFFF; --raised:#F6F8FB; --sunken:#E7ECF3;
+  --line:#D6DEEA; --line-soft:#E4EAF2;
+  --ink:#131A25; --ink-2:#48566B; --ink-3:#66738A;
+  --accent:#9A5C00; --accent-ink:#FFFFFF; --accent-soft:#FBEEDA; --accent-line:#E8C089;
+  --good:#16794A; --good-soft:#E1F4EA;
+  --bad:#C93247; --bad-soft:#FBE6E9;
+  --warn:#A25708; --warn-soft:#FCEEE1;
+  --role:#6D44B8; --role-soft:#F0E9FB;
+  --qb:#C93A55; --rb:#16794A; --wr:#2A6FD6; --te:#7B4FC4; --k:#67748A; --dst:#0C777C;
+  --chip-ink:#FFFFFF;
+  --shadow:0 1px 2px rgba(19,26,37,.06),0 8px 24px -12px rgba(19,26,37,.16);
+  --disp:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --ui:"Barlow","Helvetica Neue",system-ui,-apple-system,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0E131B; --surface:#161E2A; --raised:#1F2A3A; --sunken:#0A0E15;
+  --line:#2C3A4E; --line-soft:#212C3C;
+  --ink:#E9EEF6; --ink-2:#9DAABE; --ink-3:#7D8CA3;
+  --accent:#F2A33C; --accent-ink:#1B1206; --accent-soft:#2E2312; --accent-line:#6B4F1F;
+  --good:#35C07A; --good-soft:#12301F;
+  --bad:#F0566E; --bad-soft:#341219;
+  --warn:#F0913C; --warn-soft:#33210E;
+  --role:#B07CF5; --role-soft:#241536;
+  --qb:#F0566E; --rb:#35C07A; --wr:#4C9AFF; --te:#B07CF5; --k:#8E9AAE; --dst:#4FC3C7;
+  --chip-ink:#14100A;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+}}
+:root[data-theme="dark"]{
+  --bg:#0E131B; --surface:#161E2A; --raised:#1F2A3A; --sunken:#0A0E15;
+  --line:#2C3A4E; --line-soft:#212C3C;
+  --ink:#E9EEF6; --ink-2:#9DAABE; --ink-3:#7D8CA3;
+  --accent:#F2A33C; --accent-ink:#1B1206; --accent-soft:#2E2312; --accent-line:#6B4F1F;
+  --good:#35C07A; --good-soft:#12301F;
+  --bad:#F0566E; --bad-soft:#341219;
+  --warn:#F0913C; --warn-soft:#33210E;
+  --role:#B07CF5; --role-soft:#241536;
+  --qb:#F0566E; --rb:#35C07A; --wr:#4C9AFF; --te:#B07CF5; --k:#8E9AAE; --dst:#4FC3C7;
+  --chip-ink:#14100A;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--ui);font-size:15.5px;line-height:1.6;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+h1,h2,h3{font-family:var(--disp);font-weight:700;margin:0;line-height:1.05;text-wrap:balance}
+a{color:var(--accent)}
+.wrap{max-width:780px;margin:0 auto;padding:48px 20px 90px}
+header{margin-bottom:34px}
+header h1{font-size:clamp(44px,9vw,74px);text-transform:uppercase;letter-spacing:-.005em}
+header h1 em{font-style:normal;color:var(--accent)}
+.sub{color:var(--ink-2);margin-top:12px;max-width:60ch;font-size:16px}
+.applink{display:inline-flex;align-items:center;gap:8px;margin-top:18px;background:var(--accent);color:var(--accent-ink);font-family:var(--disp);font-weight:700;font-size:17px;letter-spacing:.04em;text-transform:uppercase;text-decoration:none;padding:10px 22px;border-radius:7px}
+.eyebrow{font-family:var(--disp);font-weight:600;font-size:12.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink-3)}
+h2{font-size:27px;text-transform:uppercase;letter-spacing:.02em;margin:46px 0 4px;padding-top:22px;border-top:1px solid var(--line)}
+h2:first-of-type{border-top:0;padding-top:0}
+h2 .no{color:var(--accent);margin-right:6px}
+.lede{color:var(--ink-2);margin:2px 0 16px;font-size:15px}
+h3{font-size:18.5px;margin:22px 0 6px}
+p{margin:9px 0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);padding:16px 18px;margin:14px 0}
+.pos{font-family:var(--disp);font-weight:700;font-size:12px;letter-spacing:.06em;padding:2px 6px;border-radius:4px;color:var(--chip-ink);display:inline-block;min-width:39px;text-align:center}
+.pos.QB{background:var(--qb)}.pos.RB{background:var(--rb)}.pos.WR{background:var(--wr)}
+.pos.TE{background:var(--te)}.pos.K{background:var(--k)}.pos.DST{background:var(--dst)}
+.sit{display:inline-flex;align-items:center;gap:4px;font-family:var(--disp);font-weight:700;font-size:11px;letter-spacing:.05em;padding:1px 8px;border-radius:100px;border:1px solid;white-space:nowrap}
+.sit.out{color:var(--bad);border-color:var(--bad);background:var(--bad-soft)}
+.sit.inj{color:var(--warn);border-color:var(--warn);background:var(--warn-soft)}
+.sit.role{color:var(--role);border-color:var(--role);background:var(--role-soft)}
+.sit.up{color:var(--good);border-color:var(--good);background:var(--good-soft)}
+.demo{background:var(--raised);border:1px solid var(--line);border-radius:9px;padding:12px 14px;margin:12px 0}
+.demo .row{display:grid;grid-template-columns:32px 42px minmax(0,1fr) auto auto;gap:10px;align-items:center}
+.demo .rk{font-family:var(--disp);font-weight:600;color:var(--ink-3);text-align:right}
+.demo .nm{font-family:var(--disp);font-weight:700;font-size:19px}
+.demo .meta{font-size:11.5px;color:var(--ink-3)}
+.demo .note{font-size:11.5px;color:var(--ink-2);margin-top:2px}
+.demo .adp{font-family:var(--disp);font-weight:700;font-size:18px;text-align:right;line-height:1}
+.demo .adp small{display:block;font-size:9.5px;letter-spacing:.1em;color:var(--ink-3);font-weight:600}
+.legend{display:grid;grid-template-columns:auto 1fr;gap:8px 14px;align-items:baseline;margin-top:10px;font-size:14px}
+.legend .n{font-family:var(--disp);font-weight:700;color:var(--accent);font-size:14px}
+.chips{display:grid;grid-template-columns:auto 1fr;gap:9px 14px;align-items:center;font-size:14px}
+kbd{font-family:var(--ui);font-size:12.5px;font-weight:600;background:var(--sunken);border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 7px;white-space:nowrap}
+.gone{color:var(--bad);font-weight:600}
+ul,ol{margin:8px 0;padding-left:22px}
+li{margin-bottom:7px}
+li b{color:var(--ink)}
+.callout{border-left:4px solid var(--accent);background:var(--accent-soft);border-radius:0 9px 9px 0;padding:12px 16px;margin:16px 0;font-size:14.5px}
+.callout b{font-family:var(--disp);letter-spacing:.05em;text-transform:uppercase;font-size:12.5px;display:block;margin-bottom:3px;color:var(--accent)}
+.check{list-style:none;padding-left:4px}
+.check li{padding-left:28px;position:relative}
+.check li:before{content:"";position:absolute;left:0;top:4px;width:15px;height:15px;border:2px solid var(--accent);border-radius:4px}
+.vc{font-family:var(--disp);font-weight:700;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;padding:1px 7px;border-radius:4px;white-space:nowrap;border:1px solid}
+.vc.good{background:var(--good-soft);color:var(--good);border-color:var(--good)}
+.vc.left{background:var(--bad-soft);color:var(--bad);border-color:var(--bad)}
+.vc.wait{background:var(--warn-soft);color:var(--warn);border-color:var(--warn)}
+footer{margin-top:52px;padding-top:18px;border-top:1px solid var(--line);font-size:13px;color:var(--ink-3)}
+@media (max-width:560px){.wrap{padding:30px 14px 70px}.demo .row{grid-template-columns:26px 42px minmax(0,1fr) auto}.demo .row .hidebit{display:none}}
+</style>
+
+<div class="wrap">
+<header>
+  <span class="eyebrow">Field Guide</span>
+  <h1>How To Run<br><em>The War Room</em></h1>
+  <p class="sub">The War Room does three jobs: it lets you practice drafting against a room that behaves like real people, it coaches you after every draft, and on draft day it runs alongside your real draft as a co-pilot. This guide gets you from first click to draft-day ready.</p>
+  <a class="applink" href="https://rileyandersonhunt-pixel.github.io/war-room/">Open The War Room</a>
+</header>
+
+<h2><span class="no">01</span>Two Minutes To Your First Draft</h2>
+<p class="lede">Leave everything on default the first time. The defaults are a 12-team, half-PPR snake draft, picking 6th.</p>
+<ol>
+  <li>Set <b>Mode</b> to <b>Practice vs AI</b>, match <b>Teams</b>, <b>Scoring</b>, and <b>Your draft slot</b> to your real league, and check the roster matches yours.</li>
+  <li>Hit <b>Start Mock Draft</b>. The other eleven managers pick until it reaches you.</li>
+  <li>When the amber bar says <b>You are on the clock</b>, click a player to draft him. That is the whole loop.</li>
+</ol>
+<div class="callout"><b>The one setting that matters</b>
+Unpredictability defaults to <b>True to market</b>, which is tuned to match how real drafts actually spread (measured against 2,810 of them). Practice there. Slide toward Bedlam when you want reps against a chaotic room, but know that you chose chaos.</div>
+
+<h2><span class="no">02</span>Reading A Player Row</h2>
+<p class="lede">Every row answers four questions: how the market ranks him, what shape his situation is in, what it costs you to wait, and what the market would pay.</p>
+<div class="demo">
+  <div class="row">
+    <span class="rk">17</span>
+    <span class="pos RB">RB6</span>
+    <span style="min-width:0">
+      <span class="nm">Example Back</span>
+      <div class="meta">KC &middot; Bye 6 &middot; <span class="gone">72% gone by 3.06</span></div>
+      <div class="note">MCL sprain Aug 12, latest reports say 3-plus weeks, Week 1 in doubt (Aug 24)</div>
+    </span>
+    <span class="sit inj hidebit">INJURY &#9660;18</span>
+    <span class="adp">15.3<small>ADP</small></span>
+  </div>
+</div>
+<div class="legend">
+  <span class="n">17</span><span>Overall market rank right now, among available players.</span>
+  <span class="n">RB6</span><span>Position and positional rank. Colors are consistent everywhere: <span class="pos QB">QB</span> <span class="pos RB">RB</span> <span class="pos WR">WR</span> <span class="pos TE">TE</span> <span class="pos K">K</span> <span class="pos DST">DST</span></span>
+  <span class="n">72%</span><span>Odds he is drafted before your next turn. This only shows while you are on the clock, and it is calibrated: when it says 72, players in that situation really are gone about 72% of the time.</span>
+  <span class="n">&#9660;18</span><span>The dock: how many draft spots his situation costs him in the Adjusted order. The note underneath is the reason, with the date of the report.</span>
+  <span class="n">15.3</span><span>Average draft position across thousands of real drafts. The market's price, untouched by the dock.</span>
+</div>
+
+<h3>The situation chips</h3>
+<div class="chips">
+  <span class="sit out">OUT</span><span>Expected to miss a month or more, or done for the year. Pushed out of draftable range.</span>
+  <span class="sit out">SUSPENDED</span><span>League discipline in play. Treated like an absence.</span>
+  <span class="sit inj">INJURY</span><span>Hurt or rehabbing, multi-week concern or Week 1 genuinely in doubt.</span>
+  <span class="sit inj">DAY-TO-DAY</span><span>Minor or managed. Small dock, mostly a heads-up.</span>
+  <span class="sit role">JOB RISK</span><span>Real risk of losing the starting role. The note names who is taking it.</span>
+  <span class="sit role">COMMITTEE</span><span>A timeshare is forming that caps his volume.</span>
+  <span class="sit role">FADING</span><span>Preseason usage says his role is smaller than his price assumes.</span>
+  <span class="sit up">RISER</span><span>Concrete good news: won a job, cleared a path. Context only, no dock. He is not boosted, so a riser at his ADP can be your value pick.</span>
+</div>
+<p style="margin-top:12px">The <b>Adjusted</b> sort (the default) is ADP plus the docks: the "who should I actually take next" order. Flip to <b>ADP</b> any time to see the raw market. The header stamp shows the dates of the data you are looking at.</p>
+
+<h2><span class="no">03</span>The Advice Tab</h2>
+<p class="lede">The right-hand rail's first tab is your analyst. It never disagrees with the engine, because it is the engine.</p>
+<ul>
+  <li><b>Best Picks Right Now.</b> Top five for your roster, each with plain reasons: falling past ADP, fills an open slot, last of his tier, odds he survives to your next turn, injury or role risk. Click one to draft him straight from the list.</li>
+  <li><b>Safe To Wait On.</b> Players you like who will probably still be there next turn. This list is how you stop burning picks on players you could have had a round later.</li>
+  <li><b>Tier Cliffs.</b> How many players remain in the current tier at each position, and where the next tier's price starts. When a position you still need shows <b>1 left</b> in red, that is the moment to decide, not two picks later.</li>
+  <li><b>Run alerts.</b> When five of the last eight picks are one position, a banner says so. Runs end; the value they leave behind at other positions does not.</li>
+</ul>
+<p>While other managers pick, the tab becomes a watchlist: your likely targets, each with live odds of surviving to your turn. Plan while you wait; picking is then just confirming the plan.</p>
+
+<h2><span class="no">04</span>Practicing With Intent</h2>
+<p class="lede">Random reps make you familiar. Deliberate reps make you better.</p>
+<ul>
+  <li><b>Rewind is your A/B test.</b> Click any completed pick on the Board (or in the Feed) to rewind there and choose differently. The room keeps the same instincts, so the comparison is honest: same managers, same tendencies, different decision. Rewinding your round 3 pick and finishing both ways teaches more than three fresh drafts.</li>
+  <li><b>Seeds replay a room.</b> Same seed and settings recreate the identical draft room. Shuffle the seed for a fresh one. Found a room that punished you? Keep the seed and beat it.</li>
+  <li><b>The Room tab</b> shows each opponent's strategy: Zero RB, Early QB, Value Vulture and so on. Reading the room mid-draft ("three teams still need a QB before my next pick") is a real skill this trains.</li>
+  <li><b>Your own rankings.</b> Paste your board into setup, one name per line. A blank line or a line saying "Tier 2" starts a new tier. The list gains a <b>My board</b> sort, and every row shows a MY chip: green when the market prices your guy below your rank (you can wait on him), red when you would have to reach. Drafting your board against the market's prices is the entire skill of drafting.</li>
+</ul>
+<div class="callout"><b>Keyboard</b>
+Type in the search box and press <kbd>Enter</kbd> to draft the top match. <kbd>Esc</kbd> clears the search. <kbd>b</kbd> toggles the board, <kbd>s</kbd> sims to your pick, <kbd>z</kbd> rewinds.</div>
+
+<h2><span class="no">05</span>After The Draft: The Coaching</h2>
+<p class="lede">The grade is the least important thing on the results screen. Read upward from the bottom.</p>
+<ul>
+  <li><b>The grade</b> scores your starters' value over replacement against the other rosters. It measures how well you shopped, not how many points you will score. An A means you captured value and scarcity; it cannot know whether your bets hit.</li>
+  <li><b>Pick-By-Pick Review</b> is the real coaching. Every pick gets a verdict:
+    <span class="vc good">clean</span> best available fit at that moment.
+    <span class="vc left">value left</span> a clearly better player sat there, and it tells you when he actually went.
+    <span class="vc wait">could have waited</span> your guy probably survived to your next turn: you paid a round early for him.</li>
+  <li><b>Coach Notes</b> turn the review into habits: QB timing versus the room, bye-week stacking, kicker timing.</li>
+  <li><b>Your Draft Log</b> saves every finished draft in this browser. After three or more, the setup screen starts naming your patterns, like taking a QB a round and a half before the room does. When a habit stops appearing in the log, you fixed it.</li>
+</ul>
+
+<h2><span class="no">06</span>Five Drills That Actually Transfer</h2>
+<ol>
+  <li><b>The patience rep.</b> Finish a draft with zero "could have waited" verdicts. Use Safe To Wait On aggressively. This is the fastest grade improvement available.</li>
+  <li><b>The cliff rep.</b> Draft a full mock making every positional decision at the moment a tier cliff turns red, never after. You are training when to decide.</li>
+  <li><b>The slot tour.</b> Run the same room (same seed) from pick 1, pick 6, and pick 12. The turn (1.01) and the wheel (1.12) are different sports; do not let your real draft be your first rep from your real slot.</li>
+  <li><b>The run rep.</b> Set unpredictability to Bedlam and survive a positional run without chasing it. Panic is a trainable reflex.</li>
+  <li><b>The A/B rep.</b> After each draft, rewind to your most uncertain pick, take the other guy, and finish again. Compare the two reviews, not the two grades.</li>
+</ol>
+
+<h2><span class="no">07</span>Draft Day: Live Co-Pilot</h2>
+<p class="lede">Switch Mode to <b>Live draft co-pilot</b>. Nobody auto-picks. You mirror your real draft into the War Room and it analyzes everything in return.</p>
+<ul>
+  <li><b>Entering picks is the whole job.</b> When anyone in your real draft picks, type three or four letters, hit <kbd>Enter</kbd>, done. The search clears itself for the next pick. It takes about two seconds per pick once you have the rhythm.</li>
+  <li><b>Fixing mistakes.</b> <b>Undo pick</b> takes back the last entry. For an error a few picks back, click that pick in the Feed and re-enter from there.</li>
+  <li><b>Name the managers.</b> In the Room tab, click any team name to rename it to the real manager. Now "Big Mike already has three receivers" is knowledge you own mid-draft.</li>
+  <li><b>Between your picks</b>, the Advice tab shows your targets with live survival odds. On your pick, it is the same Best Picks Right Now you practiced with.</li>
+  <li><b>When it ends</b> (or if your league only drafts partway), hit Exit and get the full analysis of your real draft, saved to your log like any other.</li>
+</ul>
+
+<h3>Draft-day checklist</h3>
+<ul class="check">
+  <li>Use the same device and browser you practiced on. Your log and autosave live there.</li>
+  <li>Hard-refresh the page once before the draft starts (Cmd+Shift+R) so you are on the newest data. Check the date stamp in the header.</li>
+  <li>Set mode to Live, match teams, scoring, roster, and your real slot exactly.</li>
+  <li>Paste your final rankings into Your Board.</li>
+  <li>Run one two-minute practice draft in the morning to warm up the entry rhythm.</li>
+</ul>
+<div class="callout"><b>If anything crashes</b>
+The draft autosaves on every pick. Reopen the page and a Resume button restores everything: every pick, your renamed managers, whoever is on the clock. You cannot lose a draft to a refresh.</div>
+
+<h2><span class="no">08</span>What It Knows And What It Does Not</h2>
+<ul>
+  <li><b>It knows the market:</b> real ADP from thousands of drafts, in your scoring format, plus injury, practice, and role reporting with dates on every note. The header stamp tells you how fresh.</li>
+  <li><b>The docks are editorial.</b> They size the risk from sourced facts, but they are judgment. The chip and note give you everything you need to overrule one, and you should when you know better.</li>
+  <li><b>It does not project points.</b> No projections, no schedule analysis, no weekly matchups. It prices scarcity and value; whether a player is good is still your call.</li>
+  <li><b>It is a snapshot, not a feed.</b> The page updates when a new version is published and you reload it. It cannot pull news on its own.</li>
+  <li><b>Your data stays yours.</b> The log and autosave live in your browser only. Nothing you do in the app is sent anywhere.</li>
+</ul>
+
+<footer>
+  The War Room &middot; ADP from Fantasy Football Calculator consensus &middot; situation reporting compiled from public August 2026 sources, dated per note.
+  Data freshness is stamped in the app header. This guide describes the build of Aug 26, 2026.
+</footer>
+</div>
