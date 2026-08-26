@@ -1506,11 +1506,23 @@ function renderResults(){
   <div class="go">
     <button class="btn btn-primary btn-lg" id="rAgain">Run It Back</button>
     <div style="display:flex;gap:9px;justify-content:center;margin-top:12px;flex-wrap:wrap">
+      <button class="btn" id="rCopy">Copy roster</button>
       <button class="btn" id="rSame">Replay this exact room</button>
       <button class="btn" id="rSetup">Change settings</button>
     </div>
     <small>&ldquo;Run It Back&rdquo; keeps your league settings and deals a brand new room of opponents.</small>
   </div>`;
+  $('rCopy').onclick=()=>{
+    const {slots:sl,bench:bn}=buildLineup(me);
+    const fmt=p=>`${p.name} (${p.pos}${p.posRank}, ${p.team}, bye ${p.bye||'?'}) [${roundOf(p.n)}.${String(slotOf(p.n)).padStart(2,'0')}]`;
+    const txt=['My War Room roster '+new Date().toLocaleDateString(),
+      `${S.teams}-team ${S.scoring==='half'?'half-PPR':S.scoring==='ppr'?'PPR':'standard'}${S.superflex?' superflex':''}, slot ${S.myIdx+1}`,'',
+      'STARTERS:',...sl.map(x=>'  '+x.lab+': '+(x.p?fmt(x.p):'(open)')),'',
+      'BENCH:',...(bn.length?bn.map(p=>'  '+fmt(p)):['  (none)'])].join('\n');
+    try{navigator.clipboard.writeText(txt).then(()=>toast('Roster copied. Paste it to Claude to start your season.'),
+      ()=>toast('Copy blocked by the browser. Select the lineup and copy manually.'));}
+    catch(e){toast('Copy blocked by the browser. Select the lineup and copy manually.');}
+  };
   $('rAgain').onclick=()=>{S.seed=randSeed();begin();};
   $('rSame').onclick=()=>begin();
   $('rSetup').onclick=()=>{show('setup');syncSetup();};

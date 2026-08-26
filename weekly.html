@@ -1,0 +1,116 @@
+<title>The Weekly Brief</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --bg:#EEF1F6; --surface:#FFFFFF; --raised:#F6F8FB; --sunken:#E7ECF3;
+  --line:#D6DEEA; --line-soft:#E4EAF2;
+  --ink:#131A25; --ink-2:#48566B; --ink-3:#66738A;
+  --accent:#9A5C00; --accent-ink:#FFFFFF; --accent-soft:#FBEEDA; --accent-line:#E8C089;
+  --good:#16794A; --good-soft:#E1F4EA;
+  --bad:#C93247; --bad-soft:#FBE6E9;
+  --warn:#A25708; --warn-soft:#FCEEE1;
+  --role:#6D44B8; --role-soft:#F0E9FB;
+  --qb:#C93A55; --rb:#16794A; --wr:#2A6FD6; --te:#7B4FC4; --k:#67748A; --dst:#0C777C;
+  --chip-ink:#FFFFFF;
+  --shadow:0 1px 2px rgba(19,26,37,.06),0 8px 24px -12px rgba(19,26,37,.16);
+  --disp:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --ui:"Barlow","Helvetica Neue",system-ui,-apple-system,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0E131B; --surface:#161E2A; --raised:#1F2A3A; --sunken:#0A0E15;
+  --line:#2C3A4E; --line-soft:#212C3C;
+  --ink:#E9EEF6; --ink-2:#9DAABE; --ink-3:#7D8CA3;
+  --accent:#F2A33C; --accent-ink:#1B1206; --accent-soft:#2E2312; --accent-line:#6B4F1F;
+  --good:#35C07A; --good-soft:#12301F;
+  --bad:#F0566E; --bad-soft:#341219;
+  --warn:#F0913C; --warn-soft:#33210E;
+  --role:#B07CF5; --role-soft:#241536;
+  --qb:#F0566E; --rb:#35C07A; --wr:#4C9AFF; --te:#B07CF5; --k:#8E9AAE; --dst:#4FC3C7;
+  --chip-ink:#14100A;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+}}
+:root[data-theme="dark"]{
+  --bg:#0E131B; --surface:#161E2A; --raised:#1F2A3A; --sunken:#0A0E15;
+  --line:#2C3A4E; --line-soft:#212C3C;
+  --ink:#E9EEF6; --ink-2:#9DAABE; --ink-3:#7D8CA3;
+  --accent:#F2A33C; --accent-ink:#1B1206; --accent-soft:#2E2312; --accent-line:#6B4F1F;
+  --good:#35C07A; --good-soft:#12301F;
+  --bad:#F0566E; --bad-soft:#341219;
+  --warn:#F0913C; --warn-soft:#33210E;
+  --role:#B07CF5; --role-soft:#241536;
+  --qb:#F0566E; --rb:#35C07A; --wr:#4C9AFF; --te:#B07CF5; --k:#8E9AAE; --dst:#4FC3C7;
+  --chip-ink:#14100A;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--ui);font-size:15.5px;line-height:1.6;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+h1,h2,h3{font-family:var(--disp);font-weight:700;margin:0;line-height:1.05;text-wrap:balance}
+a{color:var(--accent)}
+.wrap{max-width:780px;margin:0 auto;padding:48px 20px 90px}
+header{margin-bottom:34px}
+header h1{font-size:clamp(44px,9vw,74px);text-transform:uppercase;letter-spacing:-.005em}
+header h1 em{font-style:normal;color:var(--accent)}
+.sub{color:var(--ink-2);margin-top:12px;max-width:60ch;font-size:16px}
+.applink{display:inline-flex;align-items:center;gap:8px;margin-top:18px;background:var(--accent);color:var(--accent-ink);font-family:var(--disp);font-weight:700;font-size:17px;letter-spacing:.04em;text-transform:uppercase;text-decoration:none;padding:10px 22px;border-radius:7px}
+.eyebrow{font-family:var(--disp);font-weight:600;font-size:12.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink-3)}
+h2{font-size:27px;text-transform:uppercase;letter-spacing:.02em;margin:46px 0 4px;padding-top:22px;border-top:1px solid var(--line)}
+h2:first-of-type{border-top:0;padding-top:0}
+h2 .no{color:var(--accent);margin-right:6px}
+.lede{color:var(--ink-2);margin:2px 0 16px;font-size:15px}
+h3{font-size:18.5px;margin:22px 0 6px}
+p{margin:9px 0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);padding:16px 18px;margin:14px 0}
+.pos{font-family:var(--disp);font-weight:700;font-size:12px;letter-spacing:.06em;padding:2px 6px;border-radius:4px;color:var(--chip-ink);display:inline-block;min-width:39px;text-align:center}
+.pos.QB{background:var(--qb)}.pos.RB{background:var(--rb)}.pos.WR{background:var(--wr)}
+.pos.TE{background:var(--te)}.pos.K{background:var(--k)}.pos.DST{background:var(--dst)}
+.sit{display:inline-flex;align-items:center;gap:4px;font-family:var(--disp);font-weight:700;font-size:11px;letter-spacing:.05em;padding:1px 8px;border-radius:100px;border:1px solid;white-space:nowrap}
+.sit.out{color:var(--bad);border-color:var(--bad);background:var(--bad-soft)}
+.sit.inj{color:var(--warn);border-color:var(--warn);background:var(--warn-soft)}
+.sit.role{color:var(--role);border-color:var(--role);background:var(--role-soft)}
+.sit.up{color:var(--good);border-color:var(--good);background:var(--good-soft)}
+.demo{background:var(--raised);border:1px solid var(--line);border-radius:9px;padding:12px 14px;margin:12px 0}
+.demo .row{display:grid;grid-template-columns:32px 42px minmax(0,1fr) auto auto;gap:10px;align-items:center}
+.demo .rk{font-family:var(--disp);font-weight:600;color:var(--ink-3);text-align:right}
+.demo .nm{font-family:var(--disp);font-weight:700;font-size:19px}
+.demo .meta{font-size:11.5px;color:var(--ink-3)}
+.demo .note{font-size:11.5px;color:var(--ink-2);margin-top:2px}
+.demo .adp{font-family:var(--disp);font-weight:700;font-size:18px;text-align:right;line-height:1}
+.demo .adp small{display:block;font-size:9.5px;letter-spacing:.1em;color:var(--ink-3);font-weight:600}
+.legend{display:grid;grid-template-columns:auto 1fr;gap:8px 14px;align-items:baseline;margin-top:10px;font-size:14px}
+.legend .n{font-family:var(--disp);font-weight:700;color:var(--accent);font-size:14px}
+.chips{display:grid;grid-template-columns:auto 1fr;gap:9px 14px;align-items:center;font-size:14px}
+kbd{font-family:var(--ui);font-size:12.5px;font-weight:600;background:var(--sunken);border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 7px;white-space:nowrap}
+.gone{color:var(--bad);font-weight:600}
+ul,ol{margin:8px 0;padding-left:22px}
+li{margin-bottom:7px}
+li b{color:var(--ink)}
+.callout{border-left:4px solid var(--accent);background:var(--accent-soft);border-radius:0 9px 9px 0;padding:12px 16px;margin:16px 0;font-size:14.5px}
+.callout b{font-family:var(--disp);letter-spacing:.05em;text-transform:uppercase;font-size:12.5px;display:block;margin-bottom:3px;color:var(--accent)}
+.check{list-style:none;padding-left:4px}
+.check li{padding-left:28px;position:relative}
+.check li:before{content:"";position:absolute;left:0;top:4px;width:15px;height:15px;border:2px solid var(--accent);border-radius:4px}
+.vc{font-family:var(--disp);font-weight:700;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;padding:1px 7px;border-radius:4px;white-space:nowrap;border:1px solid}
+.vc.good{background:var(--good-soft);color:var(--good);border-color:var(--good)}
+.vc.left{background:var(--bad-soft);color:var(--bad);border-color:var(--bad)}
+.vc.wait{background:var(--warn-soft);color:var(--warn);border-color:var(--warn)}
+footer{margin-top:52px;padding-top:18px;border-top:1px solid var(--line);font-size:13px;color:var(--ink-3)}
+@media (max-width:560px){.wrap{padding:30px 14px 70px}.demo .row{grid-template-columns:26px 42px minmax(0,1fr) auto}.demo .row .hidebit{display:none}}
+</style>
+<div class="wrap">
+<header>
+  <span class="eyebrow">In-Season</span>
+  <h1>The<br><em>Weekly Brief</em></h1>
+  <p class="sub">This link is your bookmark for the whole season. Every Tuesday the waiver brief lands here: adds ranked with exact FAAB bids, drops named. Every Sunday morning the lineup brief replaces it: start and sit calls for every slot, with a pivot plan for each game-time decision.</p>
+</header>
+<div class="card">
+  <span class="eyebrow">Status</span>
+  <p style="margin-top:8px"><b>The season has not started.</b> First waiver brief lands after Week 1. Until then, draft season: practice in
+  <a href="https://rileyandersonhunt-pixel.github.io/war-room/">The War Room</a> and read the
+  <a href="https://rileyandersonhunt-pixel.github.io/war-room/guide.html">Field Guide</a>.</p>
+</div>
+<div class="callout"><b>How it works</b>
+After draft night, the roster from the results screen (Copy roster button) becomes the season file. Each brief is researched fresh that day from dated sources, published here, and summarized in chat. One bookmark, always the current week.</div>
+<footer>The War Room in-season system. Content replaced weekly during the season.</footer>
+</div>
