@@ -265,6 +265,7 @@ textarea{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:
 .verdict-chip.good{background:var(--good-soft);color:var(--good);border:1px solid var(--good)}
 .verdict-chip.left{background:var(--bad-soft);color:var(--bad);border:1px solid var(--bad)}
 .verdict-chip.wait{background:var(--warn-soft);color:var(--warn);border:1px solid var(--warn)}
+.verdict-chip.conv{background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent-line)}
 .histrow{display:flex;gap:9px;align-items:baseline;font-size:13px;padding:4px 0;border-bottom:1px solid var(--line-soft)}
 .histrow:last-child{border-bottom:0}
 .histrow .g{font-family:var(--disp);font-weight:700;font-size:16px;min-width:26px;color:var(--accent)}
@@ -834,7 +835,46 @@ function applyBoard(){
 /* ============ advice + review logic ============
    Pure functions shared by the in-draft Advice tab and the post-draft review.
    Everything is derived from engine state so the advice can never disagree
-   with what the simulator itself believes.                                */
+   with what the simulator itself believes.
+
+   The decision metric is OPPORTUNITY COST, not raw player value: what a player
+   is worth now minus what the same position will realistically offer at your
+   next pick, using the calibrated survival odds. That is what makes "take the
+   position that is running out" beat "take the best name" when it should.   */
+const valCurve=adp=>Math.max(0,110-22*Math.log(adp+3));
+const valOf=p=>(p.mine!=null?p.mine:p.adj);
+// expected value of the best remaining player at a position when pick `until`
+// arrives, over an explicit candidate list (walk in value order: the k-th is
+// the best survivor only if everyone better is gone)
+function expBestFrom(cands,fromPick,untilPick){
+  const c=cands.slice().sort((a,b)=>valOf(a)-valOf(b));
+  let allGone=1,ev=0,i=0;
+  for(;i<c.length&&i<16;i++){
+    const g=goneProb(c[i],fromPick,untilPick);
+    ev+=allGone*(1-g)*valCurve(valOf(c[i]));
+    allGone*=g;
+    if(allGone<0.02) break;
+  }
+  ev+=allGone*valCurve(i<c.length?valOf(c[Math.min(c.length-1,i+2)]):170);
+  return ev;
+}
+function availAtPos(pos){
+  const out=[];
+  for(const id of G.avail){const q=G.byId[id];if(q.pos===pos&&!q.depth)out.push(q);}
+  return out;
+}
+// cost, in value points, of NOT addressing this position until your next pick
+function dropoffNow(p,nxt){
+  if(nxt<0||nxt<=G.cur) return 0;
+  return valCurve(valOf(p))-expBestFrom(availAtPos(p.pos),G.cur,nxt);
+}
+function needFactor(team,pos){
+  if(pos==='K'||pos==='DST') return 1;
+  const ns=needState(team);
+  if(ns.hard[pos]>0) return 1;
+  if(pos==='QB') return ns.sfLeft>0?0.95:0.3;
+  return ns.flexLeft>0?0.9:0.3;
+}
 function tierLeft(p){
   let n=0;
   for(const id of G.avail){const q=G.byId[id];
@@ -864,15 +904,27 @@ function runNow(){
 }
 function adviceCands(){
   const me=G.teams[S.myIdx], rd=roundOf(G.cur), picksLeft=S.rounds-rd+1;
+  const mine=teamAtPick(G.cur)===S.myIdx;
+  const nxt=nextMyPick(mine?G.cur+1:G.cur);
   const out=[];
   for(const id of G.avail){
     const p=G.byId[id];
     const nb=needBonus(me,p.pos,picksLeft,0.9);
     if(nb===null) continue;
-    const base=(p.mine!=null?p.mine:p.adj);
-    out.push({p,score:base-nb});
+    const drop=dropoffNow(p,nxt);
+    const urgency=drop*needFactor(me,p.pos);
+    // urgency decides the order; value breaks ties so the better player of two
+    // equally scarce options still comes first
+    out.push({p,drop,urgency,score:-urgency+valOf(p)*0.002});
   }
   out.sort((a,b)=>a.score-b.score);
+  // a kicker or defence in its must-draft window jumps the queue
+  const kd=out.filter(x=>(x.p.pos==='K'||x.p.pos==='DST'));
+  if(kd.length){
+    const must=kd.filter(x=>needBonus(me,x.p.pos,picksLeft,0.9)>0);
+    if(must.length){const best=must.sort((a,b)=>valOf(a.p)-valOf(b.p))[0];
+      const i=out.indexOf(best); if(i>0){out.splice(i,1);out.unshift(best);}}
+  }
   return out;
 }
 function whyLines(p,nxt){
@@ -886,6 +938,11 @@ function whyLines(p,nxt){
   if(tl===1) out.push('LAST one in '+p.pos+' tier '+p.tier);
   else if(tl===2) out.push('one of the last 2 in '+p.pos+' tier '+p.tier);
   if(nxt>=0&&nxt>G.cur){
+    const d=dropoffNow(p,nxt);
+    if(d>=2.2) out.push('waiting at '+p.pos+' costs about '+d.toFixed(1)+' pts of value');
+    else if(d<=0.5&&tl>2) out.push(p.pos+' shelf is deep, similar value likely at your next turn');
+  }
+  if(nxt>=0&&nxt>G.cur){
     const g=goneProb(p,G.cur,nxt);
     out.push(g>=0.45?Math.round(g*100)+'% gone by your next pick'
                     :Math.round((1-g)*100)+'% chance he is still there next turn');
@@ -895,33 +952,58 @@ function whyLines(p,nxt){
   if(bc>=2) out.push(bc+' of your players already on bye '+p.bye);
   return out.slice(0,3);
 }
-/* post-draft: what was on the board each time you picked, and what it cost */
+/* post-draft: what was on the board each time you picked, and what it cost.
+   An alternative only counts as "value left" if SWAPPING would have improved the
+   two-pick horizon: alt now plus your position's expected leftover at your next
+   pick, versus your pick now plus the alt position's leftover. That is the
+   scarcity-honest comparison: passing a better name to beat a position cliff is
+   scored as correct. A pick backed by a RISER flag gets conviction grace: the
+   sim tracks it rather than fighting your read.                              */
 function reviewPicks(){
   const takenAt={}; G.picks.forEach(pk=>{takenAt[pk.pid]=pk.n;});
   const mine=G.teams[S.myIdx].roster.map(x=>({pid:x.pid,n:x.n}));
   const myNs=mine.map(x=>x.n);
+  const skill=['QB','RB','WR','TE'];
+  const had={QB:0,RB:0,WR:0,TE:0};
   return mine.map(({pid,n})=>{
     const p=G.byId[pid];
-    const pv=(p.mine!=null?p.mine:p.adj);
-    let alt=null,altV=1e9;
-    for(const q of G.pool){
-      if(q.i===pid||q.pos==='K'||q.pos==='DST') continue;
-      const tAt=takenAt[q.i];
-      if(tAt!==undefined&&tAt<n) continue;
-      const val=(q.mine!=null?q.mine:q.adj);
-      if(val<pv-6&&val<altV){alt=q;altV=val;}
-    }
+    const availAt=pos=>G.pool.filter(q=>q.pos===pos&&!q.depth&&
+      (takenAt[q.i]===undefined||takenAt[q.i]>=n));
     const later=myNs.filter(x=>x>n);
     const nxt=later.length?Math.min(...later):-1;
     const g=nxt>=0?goneProb(p,n,nxt):1;
-    return {p,n,alt,altTakenAt:alt?takenAt[alt.i]:undefined,g};
+    let alt=null,edge=0;
+    if(skill.includes(p.pos)){
+      for(const pos of skill){
+        if(pos===p.pos) continue;
+        if((pos==='QB'&&had.QB>=1&&!S.superflex)||(pos==='TE'&&had.TE>=1)) continue;
+        const cands=availAt(pos);
+        const best=cands.slice().sort((a,b)=>valOf(a)-valOf(b))[0];
+        if(!best||valOf(best)>=valOf(p)-2) continue;
+        let e;
+        if(nxt<0) e=valCurve(valOf(best))-valCurve(valOf(p));
+        else e=(valCurve(valOf(best))+expBestFrom(availAt(p.pos),n,nxt))
+              -(valCurve(valOf(p))+expBestFrom(cands,n,nxt));
+        if(e>edge){edge=e;alt=best;}
+      }
+    }
+    const myDrop=nxt>=0?valCurve(valOf(p))-expBestFrom(availAt(p.pos),n,nxt):99;
+    let verdict;
+    if(alt&&edge>1.8){
+      verdict=(p.news&&p.news.t==='UP'&&edge<4)?'conv':'left';
+    } else if(p.news&&p.news.t==='UP'&&g<0.5) verdict='conv';
+    else if(g<0.35&&myDrop<1.2) verdict='wait';
+    else verdict='clean';
+    if(skill.includes(p.pos)) had[p.pos]++;
+    return {p,n,alt,edge,altTakenAt:alt?takenAt[alt.i]:undefined,g,myDrop,verdict};
   });
 }
 function summarizeDraft(grade,rank){
   const rev=reviewPicks();
-  const valueLeft=rev.filter(r=>r.alt).length;
-  const couldWait=rev.filter(r=>!r.alt&&r.g<0.35).length;
-  const clean=rev.length-valueLeft-couldWait;
+  const valueLeft=rev.filter(r=>r.verdict==='left').length;
+  const couldWait=rev.filter(r=>r.verdict==='wait').length;
+  const conviction=rev.filter(r=>r.verdict==='conv').length;
+  const clean=rev.length-valueLeft-couldWait-conviction;
   const firstRd=pos=>{const x=G.teams[S.myIdx].roster.find(r=>G.byId[r.pid].pos===pos);return x?roundOf(x.n):0;};
   const othersQB=G.teams.filter(t=>!t.mine).map(t=>{
     const x=t.roster.find(r=>G.byId[r.pid].pos==='QB');return x?roundOf(x.n):S.rounds;});
@@ -933,7 +1015,7 @@ function summarizeDraft(grade,rank){
   return {mode:S.mode||'sim',scoring:S.scoring,teams:S.teams,slot:S.myIdx+1,grade,rank,
     edge:Math.round(picks.reduce((a,p)=>a+p.e,0)),
     steals:picks.filter(p=>p.e>12).length,reaches:picks.filter(p=>p.e<-12).length,
-    valueLeft,couldWait,clean,qbRd:firstRd('QB'),kRd:firstRd('K'),roomQbRd:+roomQbRd.toFixed(1),maxBye};
+    valueLeft,couldWait,conviction,clean,qbRd:firstRd('QB'),kRd:firstRd('K'),roomQbRd:+roomQbRd.toFixed(1),maxBye};
 }
 
 /* ============ autosave ============
@@ -1375,7 +1457,6 @@ function renderHistory(){
 }
 
 /* ============ results ============ */
-const valCurve=adp=>Math.max(0,110-22*Math.log(adp+3));
 // Replacement level: the last player at each position who would start somewhere in the
 // league. Grading on value above that stops cheap capital at a deep position from
 // outscoring genuine scarcity at a thin one.
@@ -1476,20 +1557,23 @@ function renderResults(){
   </div>
 
   <div class="card panel" style="margin-bottom:16px"><span class="eyebrow">Pick-By-Pick Review</span>
-    <p style="font-size:13px;color:var(--ink-2);margin:0 0 10px">What the board looked like each time you picked. "Value left" means a clearly better player by this tool's model was still available; "could have waited" means your player probably survived to your next turn.</p>
+    <p style="font-size:13px;color:var(--ink-2);margin:0 0 10px">Each pick is judged on opportunity cost, not name value: taking a scarcer position over a better player scores as clean when the math backs it. "Value left" now means the other sequence was better even counting scarcity. Picks backed by a riser flag are tracked as conviction, not judged.</p>
     ${rev.map(r=>{
       const lab=`${roundOf(r.n)}.${String(slotOf(r.n)).padStart(2,'0')}`;
       let chip,detail;
-      if(r.alt){chip='<span class="verdict-chip left">value left</span>';
-        detail=`${r.alt.name} (${r.alt.pos}${r.alt.posRank}) was there and ${r.altTakenAt!==undefined?'went '+(r.altTakenAt-r.n)+' picks later':'was never drafted'}`;}
-      else if(r.g<0.35){chip='<span class="verdict-chip wait">could have waited</span>';
-        detail=`about ${Math.round((1-r.g)*100)}% to still be there at your next pick`;}
+      if(r.verdict==='left'){chip='<span class="verdict-chip left">value left</span>';
+        detail=`${r.alt.name} (${r.alt.pos}${r.alt.posRank}) was the better sequence even counting scarcity (+${r.edge.toFixed(1)} pts); he ${r.altTakenAt!==undefined?'went '+(r.altTakenAt-r.n)+' picks later':'was never drafted'}`;}
+      else if(r.verdict==='conv'){chip='<span class="verdict-chip conv">conviction</span>';
+        detail=`riser flag backed this pick${r.alt?'; the board mildly preferred '+r.alt.name:''}. Tracked, not judged`;}
+      else if(r.verdict==='wait'){chip='<span class="verdict-chip wait">could have waited</span>';
+        detail=`about ${Math.round((1-r.g)*100)}% to survive to your next pick, and the ${r.p.pos} shelf behind him was deep`;}
       else {chip='<span class="verdict-chip good">clean</span>';
-        detail='best available fit at your turn';}
+        detail=r.myDrop>=2.2?`right position at the right time: waiting at ${r.p.pos} was about to cost ${r.myDrop.toFixed(1)} pts`:'best available fit at your turn';}
       return `<div class="vrow"><span style="min-width:0"><span class="nm">${lab} ${r.p.name}</span>
         <span class="sub">${detail}</span></span>${chip}</div>`;}).join('')}
     <div class="rail-h">Coach Notes</div>
     ${(()=>{const notes=[];
+      if(sum.conviction>=2) notes.push(sum.conviction+' conviction picks on riser news. The sim tracks these rather than fighting your reads; check back after Week 2 whether they hit.');
       if(sum.valueLeft>=3) notes.push('You left the board\'s best player behind '+sum.valueLeft+' times. Before each pick, glance at the Advice tab\'s top row.');
       else if(sum.valueLeft===0) notes.push('Zero value left on the board. Every pick was defensible at the moment you made it.');
       if(sum.couldWait>=3) notes.push(sum.couldWait+' of your picks would likely have survived to your next turn. Taking the scarcer position first and doubling back is free value.');
