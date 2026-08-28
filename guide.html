@@ -95,6 +95,7 @@ li b{color:var(--ink)}
 .vc.good{background:var(--good-soft);color:var(--good);border-color:var(--good)}
 .vc.left{background:var(--bad-soft);color:var(--bad);border-color:var(--bad)}
 .vc.wait{background:var(--warn-soft);color:var(--warn);border-color:var(--warn)}
+.vc.conv{background:var(--accent-soft);color:var(--accent);border-color:var(--accent-line)}
 footer{margin-top:52px;padding-top:18px;border-top:1px solid var(--line);font-size:13px;color:var(--ink-3)}
 @media (max-width:560px){.wrap{padding:30px 14px 70px}.demo .row{grid-template-columns:26px 42px minmax(0,1fr) auto}.demo .row .hidebit{display:none}}
 </style>
@@ -156,7 +157,7 @@ Unpredictability defaults to <b>True to market</b>, which is tuned to match how 
 <h2><span class="no">03</span>The Advice Tab</h2>
 <p class="lede">The right-hand rail's first tab is your analyst. It never disagrees with the engine, because it is the engine.</p>
 <ul>
-  <li><b>Best Picks Right Now.</b> Top five for your roster, each with plain reasons: falling past ADP, fills an open slot, last of his tier, odds he survives to your next turn, injury or role risk. Click one to draft him straight from the list.</li>
+  <li><b>Best Picks Right Now.</b> Top five for your roster, ranked by <b>what waiting costs</b>: a player's value now minus what his position will realistically offer at your next pick, using the calibrated survival odds. That is why the last good tight end can outrank a better-named receiver on a deep shelf: position over player, when the math says so. Each card says the cost in plain terms ("waiting at TE costs about 2.2 pts") along with the usual reasons. Click one to draft him straight from the list.</li>
   <li><b>Safe To Wait On.</b> Players you like who will probably still be there next turn. This list is how you stop burning picks on players you could have had a round later.</li>
   <li><b>Tier Cliffs.</b> How many players remain in the current tier at each position, and where the next tier's price starts. When a position you still need shows <b>1 left</b> in red, that is the moment to decide, not two picks later.</li>
   <li><b>Run alerts.</b> When five of the last eight picks are one position, a banner says so. Runs end; the value they leave behind at other positions does not.</li>
@@ -178,10 +179,11 @@ Type in the search box and press <kbd>Enter</kbd> to draft the top match. <kbd>E
 <p class="lede">The grade is the least important thing on the results screen. Read upward from the bottom.</p>
 <ul>
   <li><b>The grade</b> scores your starters' value over replacement against the other rosters. It measures how well you shopped, not how many points you will score. An A means you captured value and scarcity; it cannot know whether your bets hit.</li>
-  <li><b>Pick-By-Pick Review</b> is the real coaching. Every pick gets a verdict:
-    <span class="vc good">clean</span> best available fit at that moment.
-    <span class="vc left">value left</span> a clearly better player sat there, and it tells you when he actually went.
-    <span class="vc wait">could have waited</span> your guy probably survived to your next turn: you paid a round early for him.</li>
+  <li><b>Pick-By-Pick Review</b> is the real coaching, and it judges opportunity cost, not names. Every pick gets a verdict:
+    <span class="vc good">clean</span> the right sequence at that moment, including "right position at the right time" when you beat a cliff by passing a better name.
+    <span class="vc left">value left</span> the other sequence was better even after counting scarcity, and it tells you when that player actually went.
+    <span class="vc wait">could have waited</span> your guy probably survived to your next turn AND his shelf was deep behind him.
+    <span class="vc conv">conviction</span> your pick was backed by a riser flag (a coach naming a starter, a role won in camp). The sim tracks these instead of judging them; your reads are yours.</li>
   <li><b>Coach Notes</b> turn the review into habits: QB timing versus the room, bye-week stacking, kicker timing.</li>
   <li><b>Your Draft Log</b> saves every finished draft in this browser. After three or more, the setup screen starts naming your patterns, like taking a QB a round and a half before the room does. When a habit stops appearing in the log, you fixed it.</li>
 </ul>
