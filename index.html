@@ -553,11 +553,17 @@ function buildPool(S){
     qbs.forEach((p,idx)=>{
       if(idx<16){p.v=Math.min(p.v,3+idx*4.4); p.hi=Math.max(1,Math.round(p.v*0.55));}
       else {p.v*=0.7; p.hi=Math.max(1,Math.round(p.hi*0.6));}
-      p.sdv=Math.max(p.sdv*0.9,2);});
+      p.sdv=3.5; // synthetic price: spread sized so survival odds match a real superflex room
+      p.adj=p.v+(p.news?p.news.d:0);}); // reprice adj too, or displays disagree with the room
   }
   pool.sort((a,b)=>a.v-b.v);
   pool.forEach((p,idx)=>p.ovr=idx+1);
   ALLPOS.forEach(pos=>{let n=0;pool.filter(p=>p.pos===pos).forEach(p=>{p.posRank=++n;});});
+  // effRank: positional rank AFTER situation docks, the rank the points model uses.
+  // A docked player is worth the production of the slot he actually occupies once
+  // his injury or suspension risk is priced, not his healthy market slot.
+  ALLPOS.forEach(pos=>{let n=0;
+    pool.filter(p=>p.pos===pos).sort((a,b)=>a.adj-b.adj).forEach(p=>{p.effRank=++n;});});
   ALLPOS.forEach(pos=>{
     const g=pool.filter(p=>p.pos===pos); let t=1;
     // break sizes tuned to each position's real ADP gap structure: QB/TE cliff hard,
@@ -828,7 +834,9 @@ function goneProb(p,curPick,untilPick){
   if(untilPick<0||untilPick<=curPick) return 0;
   const base=p.v+roomDock(p);
   const s=p.sdv*GONE_SIGMA;
-  const zc=ncdf((curPick-base)/s), zu=ncdf(((untilPick+1)-base)/s);
+  // threats are the OPPONT picks strictly between now and your turn: with back-to-back
+  // turn/wheel picks there are none, and the risk must be exactly zero
+  const zc=ncdf((curPick-base)/s), zu=ncdf(((untilPick-1)-base)/s);
   return Math.max(0,Math.min(1,(zu-zc)/Math.max(0.06,1-zc)));
 }
 
@@ -878,6 +886,10 @@ function applyBoard(){
     if(!p||used.has(p.i)){G.boardMisses.push(b.name);return;}
     used.add(p.i); p.mine=at(b.rank); p.myRank=b.rank; p.myTier=b.tier; G.boardHits++;
   });
+  // with a board loaded, the points model follows YOUR positional order
+  if(G.boardHits) ALLPOS.forEach(pos=>{let n=0;
+    G.pool.filter(p=>p.pos===pos).sort((a,b)=>(a.mine!=null?a.mine:a.adj)-(b.mine!=null?b.mine:b.adj))
+      .forEach(p=>{p.effRank=++n;});});
 }
 
 /* ============ advice + review logic ============
@@ -907,7 +919,7 @@ const PPG={
 const PPG_ADJ={ppr:{RB:0.9,WR:1.3,TE:0.8},half:{},std:{RB:-0.9,WR:-1.3,TE:-0.8}};
 function valPts(p){
   const c=PPG[p.pos]; if(!c) return 5;
-  const r=p.posRank||99;
+  const r=p.effRank||p.posRank||99;
   let v;
   if(r<=c[0][0]) v=c[0][1];
   else if(r>=c[c.length-1][0]){
@@ -991,8 +1003,12 @@ function adviceCands(){
     const p=G.byId[id];
     const nb=needBonus(me,p.pos,picksLeft,0.9);
     if(nb===null) continue;
+    // kickers and defences exist in advice ONLY inside their must-draft window;
+    // outside it their tiny-but-positive dropoff must not float above real players
+    if((p.pos==='K'||p.pos==='DST')&&nb<=0) continue;
     const drop=dropoffNow(p,nxt);
-    const urgency=drop*needFactor(me,p.pos);
+    const nf=needFactor(me,p.pos);
+    const urgency=drop>0?drop*nf:drop*(2-nf); // negatives sink FASTER for unneeded positions
     // urgency decides the order; value breaks ties so the better player of two
     // equally scarce options still comes first
     out.push({p,drop,urgency,score:-urgency+valOf(p)*0.002});
@@ -1106,22 +1122,26 @@ function draftSnapshot(){
   return {v:2, mode:S.mode, teams:S.teams, scoring:S.scoring, snake:S.snake,
     superflex:S.superflex, myIdx:S.myIdx, roster:{...S.roster}, chaos:S.chaos,
     spread:S.spread, seed:S.seed, board:S.board||[],
-    names:G.teams.map(t=>t.name), queue:(S.queue||[]).slice(),
-    picks:G.picks.map(pk=>G.byId[pk.pid].name), ts:Date.now()};
+    names:G.teams.map(t=>t.name), queue:(S.queue||[]).slice(), sleeper:S.sleeper||null,
+    picks:G.picks.map(pk=>{const p=G.byId[pk.pid];return {n:p.name,p:p.pos,t:p.team};}), ts:Date.now()};
 }
 function restoreDraft(snap){
+  const bak=JSON.parse(JSON.stringify({mode:S.mode,teams:S.teams,scoring:S.scoring,snake:S.snake,
+    superflex:S.superflex,myIdx:S.myIdx,roster:S.roster,chaos:S.chaos,spread:S.spread,seed:S.seed,
+    board:S.board,queue:S.queue||[],sleeper:S.sleeper||null}));
   Object.assign(S,{mode:snap.mode,teams:snap.teams,scoring:snap.scoring,snake:snap.snake,
     superflex:snap.superflex,myIdx:snap.myIdx,roster:{...snap.roster},chaos:snap.chaos,
     spread:snap.spread,seed:snap.seed,board:snap.board||[]});
   S.queue=(snap.queue||[]).slice();
+  S.sleeper=snap.sleeper||null;
   const r=S.roster;
   S.rounds=r.QB+r.RB+r.WR+r.TE+r.FLEX+r.SFLEX+r.K+r.DST+r.BN;
   initDraft();
   snap.names.forEach((n,i)=>{if(G.teams[i]&&n)G.teams[i].name=n;});
-  const byN={}; G.pool.forEach(p=>{byN[normName(p.name)]=p;});
-  for(const nm of snap.picks){
-    const p=byN[normName(nm)];
-    if(!p||!G.avail.has(p.i)) return false; // pool changed underneath; refuse a corrupt resume
+  for(const row of snap.picks){
+    const isObj=typeof row==='object'&&row!==null;
+    const p=ensurePlayer(isObj?row.n:row, isObj?row.p:'', isObj?row.t:'');
+    if(!p||!G.avail.has(p.i)){Object.assign(S,bak);return false;} // duplicate/corrupt: abort AND revert
     commitPick(p.i);
   }
   return true;
@@ -1131,14 +1151,24 @@ function restoreDraft(snap){
    Network fetching lives in the UI layer; this half is pure and testable:
    turning Sleeper pick rows into committed picks, self-healing any divergence
    between manual entries and the platform's truth (Sleeper always wins).   */
+function cleanTxt(x){return String(x).replace(/[<>"&\u0060]/g,'').slice(0,40);}
 function ensurePlayer(name,pos,team){
+  name=cleanTxt(name)||'Unknown Player';
   const key=normName(name);
   for(const p of G.pool){ if(normName(p.name)===key) return p; }
-  if(pos==='DEF'||pos==='DST'){ // match a team defense by shared token (city or nickname)
-    const toks=key.split(' ');
+  if(pos==='DEF'||pos==='DST'){
+    // 1st: the team abbreviation is authoritative (Sleeper sends it on every DEF pick)
+    if(team){
+      const ab=String(team).toUpperCase().replace('JAC','JAX').replace(/^LA$/,'LAR').replace(/^WSH$/,'WAS');
+      const hit=G.pool.find(p=>p.pos==='DST'&&p.team===ab);
+      if(hit) return hit;
+    }
+    // 2nd: nickname token only (never city words like New/Los/Bay that collide)
+    const generic=new Set(['new','los','las','san','bay','city','england','york','orleans','angeles','vegas','francisco','green','kansas','tampa']);
+    const toks=key.split(' ').filter(t=>t.length>3&&!generic.has(t));
     for(const p of G.pool){ if(p.pos!=='DST') continue;
       const pk=normName(p.name);
-      if(toks.some(t=>t.length>2&&pk.includes(t))) return p; }
+      if(toks.some(t=>pk.includes(t))) return p; }
   }
   // unknown deep pick: create a synthetic entry so the draft can mirror reality
   const id=Math.max(...G.pool.map(p=>p.i))+1;
@@ -1146,7 +1176,7 @@ function ensurePlayer(name,pos,team){
   const rank=G.pool.filter(p=>p.pos===posN).length+1;
   const v=200+G.pool.filter(p=>p.depth).length*1.5;
   const p={i:id,name,pos:posN,team:team||'',bye:0,v,adj:v,sdv:12,hi:1,tier:9,ovr:G.pool.length+1,
-           posRank:rank,news:null,depth:true,f:{},mine:null,myRank:null,myTier:null};
+           posRank:rank,effRank:rank,news:null,depth:true,f:{},mine:null,myRank:null,myTier:null};
   G.pool.push(p); G.byId[id]=p; G.avail.add(id);
   return p;
 }
@@ -1313,7 +1343,7 @@ function renderResume(){
       toast('Draft restored: '+snap.picks.length+' picks replayed.');
     } else {
       toast('Could not resume: player data changed since that draft.');
-      lsSet('wr-autosave',null); renderResume();
+      lsSet('wr-autosave',null); renderResume(); syncSetup();
     }};
   $('btnDiscardResume').onclick=()=>{lsSet('wr-autosave',null);renderResume();};
 }
@@ -1435,6 +1465,7 @@ function renderPool(nextPick){
   });
   el.querySelectorAll('.starbtn').forEach(b=>{
     b.onclick=e=>{e.stopPropagation();toggleQueue(+b.dataset.star);};
+    b.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();toggleQueue(+b.dataset.star);}};
   });
 }
 function toggleQueue(id){
@@ -1468,7 +1499,9 @@ function renderQueue(){
   el.querySelectorAll('[data-qx]').forEach(x=>{x.onclick=()=>{
     S.queue=S.queue.filter(q=>q!==x.dataset.qx); render();};});
 }
-let alertedFor=-1;
+let alertedFor=-1,_actx=null;
+function resetAlert(){alertedFor=-1;}
+function poolNextPick(){return nextMyPick(teamAtPick(G.cur)===S.myIdx?G.cur+1:G.cur);}
 function pickAlert(){
   if(S.mode!=='live') return;
   const nxt=nextMyPick(G.cur);
@@ -1477,13 +1510,15 @@ function pickAlert(){
   if(away<=2&&alertedFor!==nxt){
     alertedFor=nxt;
     try{
-      const ctx=new (window.AudioContext||window.webkitAudioContext)();
+      if(!_actx) _actx=new (window.AudioContext||window.webkitAudioContext)();
+      const ctx=_actx;
       [[880,0],[1175,0.18]].forEach(([f,t])=>{
         const o=ctx.createOscillator(),gn=ctx.createGain();
         o.frequency.value=f;o.connect(gn);gn.connect(ctx.destination);
         gn.gain.setValueAtTime(0.12,ctx.currentTime+t);
         gn.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+t+0.25);
         o.start(ctx.currentTime+t);o.stop(ctx.currentTime+t+0.3);});
+      if(ctx.state==='suspended')ctx.resume();
     }catch(e){}
     toast('Heads up: your pick is '+away+' away.');
   }
@@ -1545,6 +1580,8 @@ function renderAdvice(b){
       h+='<div class="rail-h">Safe To Wait On</div>';
       safe.forEach(p=>{h+=`<div class="waitrow"><span>${p.name}</span><span style="color:var(--good);font-weight:600">${Math.round((1-goneProb(p,G.cur,nxt))*100)}% still there next turn</span></div>`;});
     }
+  } else if(nxt<0){
+    h+='<div class="rail-h">Your Roster Is Full</div><div style="font-size:13px;color:var(--ink-2)">The rest of the room finishes drafting; results follow automatically.</div>';
   } else {
     h+=`<div class="rail-h">Your Turn In ${nxt-G.cur} Picks</div>`;
     const watch=cands.slice(0,6).map(c=>c.p);
@@ -1606,7 +1643,7 @@ function renderRail(){
         <div class="cnt">${chips||'<span class="cchip">no picks yet</span>'}</div></div>`;}).join('');
     b.querySelectorAll('[contenteditable]').forEach(el=>{
       el.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();el.blur();}};
-      el.onblur=()=>{const t=G.teams[+el.dataset.team];const v=el.textContent.trim();
+      el.onblur=()=>{const t=G.teams[+el.dataset.team];const v=cleanTxt(el.textContent.trim());
         if(v&&v.length<=24)t.name=v; render();};
     });
   }
@@ -1616,6 +1653,7 @@ function renderRail(){
 function renderBoard(target){
   const g=$(target||'boardGrid');
   if(!g)return;
+  const readOnly=target==='boardGrid2'; // the finished-draft board must never rewind
   g.style.gridTemplateColumns=`34px repeat(${S.teams},minmax(96px,1fr))`;
   let h='<div></div>';
   for(let t=0;t<S.teams;t++)h+=`<div class="bhead ${t===S.myIdx?'mine':''}">${t===S.myIdx?'YOU':G.teams[t].name}</div>`;
@@ -1631,13 +1669,13 @@ function renderBoard(target){
     h+=cells.join('');
   }
   g.innerHTML=h;
-  g.querySelectorAll('.bcell[data-n]').forEach(c=>{
+  if(!readOnly) g.querySelectorAll('.bcell[data-n]').forEach(c=>{
     const go=()=>rewindTo(+c.dataset.n);
     c.onclick=go; c.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();go();}};});
 }
 
 /* ============ Sleeper live sync (network half) ============ */
-let syncTimer=null,syncFails=0;
+let syncTimer=null,syncFails=0,syncGen=0;
 async function sleeperGet(path){
   const r=await fetch('https://api.sleeper.app/v1'+path);
   if(!r.ok) throw new Error('HTTP '+r.status);
@@ -1657,12 +1695,12 @@ async function resolveSleeper(){
     const slot=d.draft_order?d.draft_order[user.user_id]:null;
     S.sleeper={username:uname,userId:user.user_id,draftId:d.draft_id,leagueId:d.league_id||null,
       teams:d.settings&&d.settings.teams,rounds:d.settings&&d.settings.rounds,slot,names:{}};
-    if(S.sleeper.teams&&[8,10,12,14].includes(S.sleeper.teams)) S.teams=S.sleeper.teams;
-    if(slot) S.myIdx=slot-1;
+    if(S.sleeper.teams&&S.sleeper.teams>=4&&S.sleeper.teams<=18) S.teams=S.sleeper.teams;
+    if(slot&&slot>=1&&slot<=S.teams) S.myIdx=slot-1;
     if(d.league_id){
       try{const users=await sleeperGet('/league/'+d.league_id+'/users');
         const byId={}; users.forEach(u=>{byId[u.user_id]=u.display_name||u.username;});
-        Object.entries(d.draft_order||{}).forEach(([uid,sl])=>{if(byId[uid])S.sleeper.names[sl]=byId[uid];});
+        Object.entries(d.draft_order||{}).forEach(([uid,sl])=>{if(byId[uid])S.sleeper.names[sl]=cleanTxt(byId[uid]);});
       }catch(e){}
     }
     el.innerHTML='<span style="color:var(--good);font-weight:600">Connected:</span> '+
@@ -1683,8 +1721,10 @@ function sleeperRows(picks){
 }
 async function syncTick(){
   if(!G||!S.sleeper||!S.sleeper.draftId||G.cur>=G.total) return;
+  const gen=syncGen;
   try{
     const picks=await sleeperGet('/draft/'+S.sleeper.draftId+'/picks')||[];
+    if(gen!==syncGen||!G||G.cur>=G.total) return; // sync was stopped while we were in flight
     syncFails=0; setSyncPill(true);
     if(picks.length){
       const res=applySleeperPicks(sleeperRows(picks));
@@ -1706,14 +1746,15 @@ function setSyncPill(ok){
 }
 function startSleeperSync(){
   stopSleeperSync();
+  syncGen++;
   if(S.mode==='live'&&S.sleeper&&S.sleeper.draftId){
     Object.entries(S.sleeper.names||{}).forEach(([sl,nm])=>{
-      const t=G.teams[sl-1]; if(t&&!t.mine) t.name=String(nm).slice(0,24);});
+      const t=G.teams[sl-1]; if(t&&!t.mine) t.name=cleanTxt(nm).slice(0,24);});
     syncTick();
     syncTimer=setInterval(syncTick,6000);
   }
 }
-function stopSleeperSync(){if(syncTimer){clearInterval(syncTimer);syncTimer=null;}
+function stopSleeperSync(){syncGen++; if(syncTimer){clearInterval(syncTimer);syncTimer=null;}
   const p=$('syncPill'); if(p)p.classList.add('hide');}
 
 /* ============ sim loop ============ */
@@ -1949,7 +1990,7 @@ function begin(){
   S.queue=[];
   initDraft(); show('draft'); $('boardPanel').classList.add('hide');
   query=''; $('search').value=''; filterPos='ALL'; syncFilters();
-  railTab='advice'; syncTabs();
+  railTab='advice'; syncTabs(); resetAlert();
   S.sortBy=G.boardHits?'mine':'adj';
   window.scrollTo(0,0); render(); runAI();
   startSleeperSync();
@@ -1960,10 +2001,10 @@ function syncFilters(){
 (function wire(){
   $('posFilter').innerHTML=['ALL',...ALLPOS].map(p=>`<button class="pf" data-p="${p}" aria-pressed="${p==='ALL'}">${p==='DST'?'D/ST':p}</button>`).join('');
   $('posFilter').querySelectorAll('.pf').forEach(b=>b.onclick=()=>{filterPos=b.dataset.p;syncFilters();render();});
-  $('search').oninput=e=>{query=e.target.value;if(G)renderPool(nextMyPick(G.cur));};
+  $('search').oninput=e=>{query=e.target.value;if(G)renderPool(poolNextPick());};
   $('search').addEventListener('keydown',e=>{
     if(e.key==='Enter'){const r=document.querySelector('.prow');if(r&&query.trim())draftFromUI(+r.dataset.id);}
-    if(e.key==='Escape'){query='';e.target.value='';if(G)renderPool(nextMyPick(G.cur));}});
+    if(e.key==='Escape'){query='';e.target.value='';if(G)renderPool(poolNextPick());}});
   $('railTabs').querySelectorAll('button').forEach(b=>b.onclick=()=>{
     railTab=b.dataset.t; syncTabs(); renderRail();});
   $('chaos').oninput=e=>{S.chaos=+e.target.value;$('chaosLabel').textContent=CHAOSWORD(S.chaos);syncSetup();};
@@ -1984,16 +2025,18 @@ function syncFilters(){
   $('btnAuto').onclick=()=>{const ti=teamAtPick(G.cur);if(ti!==S.myIdx)return;
     const pid=autoPickFor(G.teams[ti],G.cur);commitPick(pid);
     toast(`Auto-picked ${G.byId[pid].name}`);render();runAI();};
-  $('btnQuit').onclick=()=>{stopSim(); stopSleeperSync();
+  $('btnQuit').onclick=()=>{stopSim();
     if(S.mode==='live'){
-      if(G.picks.length>=S.teams&&confirm('End the draft here and see your analysis?')){renderResults();}
-      else if(G.picks.length<S.teams){show('setup');syncSetup();}
+      if(G.picks.length>=S.teams){
+        if(confirm('End the draft here and see your analysis?')){stopSleeperSync();renderResults();}
+        // Cancel: stay in the draft, sync keeps running
+      } else {stopSleeperSync();show('setup');syncSetup();}
       return;}
     if(G.picks.length>S.teams*2&&confirm('Simulate the rest of the draft and see results?')){simAll();}
     else{show('setup');syncSetup();}};
   document.addEventListener('keydown',e=>{
     if($('draft').classList.contains('hide'))return;
-    if(e.target.tagName==='INPUT')return;
+    if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.isContentEditable)return;
     if(e.key==='b'){$('btnBoard').click();}
     if(e.key==='s'&&!$('btnSim').disabled){$('btnSim').click();}
     if(e.key==='z'&&!$('btnUndo').disabled){$('btnUndo').click();}
