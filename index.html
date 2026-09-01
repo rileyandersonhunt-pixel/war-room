@@ -741,7 +741,9 @@ function aiChoose(team,pickNo){
   const cands=[];
   for(const id of G.avail){
     const p=G.byId[id];
-    if(pickNo+1 < p.hi-slack) continue;
+    // the observed-earliest floor is for skill positions; K/DST timing is governed by
+    // the must-draft window, and their repriced floors would starve short drafts
+    if(p.pos!=='K'&&p.pos!=='DST'&&pickNo+1 < p.hi-slack) continue;
     const nb=needBonus(team,p.pos,picksLeft,A.need);
     if(nb===null) continue;
     let v=p.v+roomDock(p);
@@ -1218,7 +1220,7 @@ function syncSetup(){
   $('roomCard').classList.toggle('hide',S.mode==='live');
   $('sleeperField').classList.toggle('hide',S.mode!=='live');
   $('seedCard').classList.toggle('hide',S.mode==='live');
-  seg($('segTeams'),[8,10,12,14].map(v=>({l:v+' tm',v})),()=>S.teams,v=>{S.teams=v;if(S.myIdx>=v)S.myIdx=v-1;});
+  seg($('segTeams'),[6,8,10,12,14].map(v=>({l:v+' tm',v})),()=>S.teams,v=>{S.teams=v;if(S.myIdx>=v)S.myIdx=v-1;});
   seg($('segScoring'),[{l:'PPR',v:'ppr'},{l:'Half',v:'half'},{l:'Standard',v:'std'}],()=>S.scoring,v=>S.scoring=v);
   seg($('segOrder'),[{l:'Snake',v:true},{l:'Linear',v:false}],()=>S.snake,v=>S.snake=v);
   seg($('segSF'),[{l:'Off',v:false},{l:'On',v:true}],()=>S.superflex,v=>{S.superflex=v;S.roster.SFLEX=v?1:0;});
