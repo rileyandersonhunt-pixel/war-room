@@ -822,7 +822,7 @@ function rewindTo(n){
    by pick U are the wrong quantity: they brand every faller "100% gone" precisely because
    he already outlasted his ADP. This is the conditional form, and the sigma multiplier is
    fitted so the stated percentage matches the observed rate.                          */
-const GONE_SIGMA=3.0;
+const GONE_SIGMA=2.2;
 function ncdf(z){return 0.5*(1+erf(z/Math.SQRT2));}
 function erf(x){ // Abramowitz & Stegun 7.1.26
   const s=x<0?-1:1; x=Math.abs(x);
