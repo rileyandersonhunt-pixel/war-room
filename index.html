@@ -1207,6 +1207,28 @@ function ensurePlayer(name,pos,team){
   G.pool.push(p); G.byId[id]=p; G.avail.add(id);
   return p;
 }
+function sleeperDraftConfig(d,userId){
+  // Map a Sleeper draft object onto War Room settings. Sleeper is the source of
+  // truth for league shape; every field is bounds-checked so a malformed payload
+  // can never wedge setup. Missing slot keys mean the league does not use them.
+  const st=(d&&d.settings)||{}, md=(d&&d.metadata)||{}, cfg={};
+  if(typeof st.teams==='number'&&st.teams>=4&&st.teams<=18) cfg.teams=st.teams;
+  const slot=d&&d.draft_order?d.draft_order[userId]:null;
+  if(typeof slot==='number'&&slot>=1&&slot<=(cfg.teams||18)) cfg.slot=slot;
+  const sc={ppr:'ppr',half_ppr:'half',std:'std',standard:'std'}[md.scoring_type];
+  if(sc) cfg.scoring=sc;
+  if(d&&d.type==='linear') cfg.snake=false; else if(d&&d.type==='snake') cfg.snake=true;
+  const n=(k,max)=>{const v=st['slots_'+k];return typeof v==='number'&&v>=0&&v<=max?v:0;};
+  const r={QB:n('qb',3),RB:n('rb',5),WR:n('wr',5),TE:n('te',3),FLEX:n('flex',4),
+           SFLEX:n('super_flex',2),K:n('k',2),DST:n('def',2),BN:n('bn',15)};
+  let sum=r.QB+r.RB+r.WR+r.TE+r.FLEX+r.SFLEX+r.K+r.DST+r.BN;
+  if(sum>=6&&sum<=30&&(r.QB+r.RB+r.WR+r.TE)>0){
+    // if the draft runs longer than the roster, the extras are bench rounds
+    if(typeof st.rounds==='number'&&st.rounds>sum&&st.rounds<=30){r.BN+=st.rounds-sum;sum=st.rounds;}
+    cfg.roster=r; cfg.superflex=r.SFLEX>0; cfg.rounds=sum;
+  }
+  return cfg;
+}
 function applySleeperPicks(rows){
   // rows: [{pick_no, name, pos, team}] sorted by pick_no, 1-based and gapless
   rows=rows.slice().sort((a,b)=>a.pick_no-b.pick_no);
@@ -1718,15 +1740,31 @@ async function resolveSleeper(){
   try{
     const user=await sleeperGet('/user/'+encodeURIComponent(uname));
     const drafts=await sleeperGet('/user/'+user.user_id+'/drafts/nfl/2026')||[];
-    if(!drafts.length){el.textContent='Found the account, but no 2026 drafts on it yet. Reconnect once your league\'s draft room exists.';return;}
+    // Sleeper's user-drafts endpoint only lists drafts the user created (mocks).
+    // League drafts hang off the leagues, so sweep those in too.
+    try{
+      const leagues=await sleeperGet('/user/'+user.user_id+'/leagues/nfl/2026')||[];
+      const have=new Set(drafts.map(d=>d.draft_id));
+      for(const lg of leagues){
+        if(!lg.draft_id||have.has(lg.draft_id)) continue;
+        try{const ld=await sleeperGet('/draft/'+lg.draft_id);
+          if(ld&&ld.draft_id){ld.league_id=ld.league_id||lg.league_id;drafts.push(ld);have.add(ld.draft_id);}
+        }catch(e){}
+      }
+    }catch(e){}
+    if(!drafts.length){el.textContent='Found the account, but no 2026 drafts or leagues on it yet. Reconnect once your league\'s draft room exists.';return;}
     const pref={drafting:0,paused:1,pre_draft:2,complete:3};
     drafts.sort((a,b)=>(pref[a.status]??9)-(pref[b.status]??9)||(b.start_time||0)-(a.start_time||0));
     const d=drafts[0];
-    const slot=d.draft_order?d.draft_order[user.user_id]:null;
+    const cfg=sleeperDraftConfig(d,user.user_id);
+    const slot=cfg.slot||null;
     S.sleeper={username:uname,userId:user.user_id,draftId:d.draft_id,leagueId:d.league_id||null,
       teams:d.settings&&d.settings.teams,rounds:d.settings&&d.settings.rounds,slot,names:{}};
-    if(S.sleeper.teams&&S.sleeper.teams>=4&&S.sleeper.teams<=18) S.teams=S.sleeper.teams;
-    if(slot&&slot>=1&&slot<=S.teams) S.myIdx=slot-1;
+    if(cfg.teams) S.teams=cfg.teams;
+    if(slot&&slot<=S.teams) S.myIdx=slot-1;
+    if(cfg.scoring) S.scoring=cfg.scoring;
+    if(cfg.snake!==undefined) S.snake=cfg.snake;
+    if(cfg.roster){S.roster=cfg.roster;S.superflex=cfg.superflex;S.rounds=cfg.rounds;}
     if(d.league_id){
       try{const users=await sleeperGet('/league/'+d.league_id+'/users');
         const byId={}; users.forEach(u=>{byId[u.user_id]=u.display_name||u.username;});
@@ -1735,7 +1773,11 @@ async function resolveSleeper(){
     }
     el.innerHTML='<span style="color:var(--good);font-weight:600">Connected:</span> '+
       (S.sleeper.teams||'?')+'-team '+(d.type||'')+' draft, status '+d.status+
-      (slot?', you pick '+slot+getOrdinal(slot):'')+'. Picks will flow in automatically.';
+      (slot?', you pick '+slot+getOrdinal(slot):'')+
+      (cfg.roster?'. League settings loaded.':'')+
+      (d.status==='complete'
+        ?' This draft is finished: press Start Draft and the whole thing loads for full analysis.'
+        :' Picks will flow in automatically.');
     syncSetup();
   }catch(e){
     el.textContent='Could not reach Sleeper ('+e.message+'). If you are on the claude.ai copy, use the GitHub link: that page can talk to Sleeper.';
