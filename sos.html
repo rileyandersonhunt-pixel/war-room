@@ -1,0 +1,128 @@
+<title>ROS Schedule Grid</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700&display=swap">
+<style>
+
+:root{
+  --bg:#EEF1F6; --surface:#FFFFFF; --raised:#F6F8FB; --sunken:#E7ECF3;
+  --line:#D6DEEA; --line-soft:#E4EAF2;
+  --ink:#131A25; --ink-2:#48566B; --ink-3:#66738A;
+  --accent:#9A5C00; --accent-ink:#FFFFFF; --accent-soft:#FBEEDA; --accent-line:#E8C089;
+  --good:#16794A; --good-soft:#E1F4EA;
+  --bad:#C93247; --bad-soft:#FBE6E9;
+  --warn:#A25708; --warn-soft:#FCEEE1;
+  --role:#6D44B8; --role-soft:#F0E9FB;
+  --qb:#C93A55; --rb:#16794A; --wr:#2A6FD6; --te:#7B4FC4; --k:#67748A; --dst:#0C777C;
+  --chip-ink:#FFFFFF;
+  --shadow:0 1px 2px rgba(19,26,37,.06),0 8px 24px -12px rgba(19,26,37,.16);
+  --disp:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --ui:"Barlow","Helvetica Neue",system-ui,-apple-system,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0E131B; --surface:#161E2A; --raised:#1F2A3A; --sunken:#0A0E15;
+  --line:#2C3A4E; --line-soft:#212C3C;
+  --ink:#E9EEF6; --ink-2:#9DAABE; --ink-3:#7D8CA3;
+  --accent:#F2A33C; --accent-ink:#1B1206; --accent-soft:#2E2312; --accent-line:#6B4F1F;
+  --good:#35C07A; --good-soft:#12301F;
+  --bad:#F0566E; --bad-soft:#341219;
+  --warn:#F0913C; --warn-soft:#33210E;
+  --role:#B07CF5; --role-soft:#241536;
+  --qb:#F0566E; --rb:#35C07A; --wr:#4C9AFF; --te:#B07CF5; --k:#8E9AAE; --dst:#4FC3C7;
+  --chip-ink:#14100A;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+}}
+:root[data-theme="dark"]{
+  --bg:#0E131B; --surface:#161E2A; --raised:#1F2A3A; --sunken:#0A0E15;
+  --line:#2C3A4E; --line-soft:#212C3C;
+  --ink:#E9EEF6; --ink-2:#9DAABE; --ink-3:#7D8CA3;
+  --accent:#F2A33C; --accent-ink:#1B1206; --accent-soft:#2E2312; --accent-line:#6B4F1F;
+  --good:#35C07A; --good-soft:#12301F;
+  --bad:#F0566E; --bad-soft:#341219;
+  --warn:#F0913C; --warn-soft:#33210E;
+  --role:#B07CF5; --role-soft:#241536;
+  --qb:#F0566E; --rb:#35C07A; --wr:#4C9AFF; --te:#B07CF5; --k:#8E9AAE; --dst:#4FC3C7;
+  --chip-ink:#14100A;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--ui);font-size:15.5px;line-height:1.6;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+h1,h2,h3{font-family:var(--disp);font-weight:700;margin:0;line-height:1.05}
+a{color:var(--accent)}
+.wrap{max-width:860px;margin:0 auto;padding:40px 16px 90px}
+h1{font-size:clamp(38px,8vw,64px);text-transform:uppercase}
+h1 em{font-style:normal;color:var(--accent)}
+h2{font-size:24px;text-transform:uppercase;margin:40px 0 10px;padding-top:20px;border-top:1px solid var(--line)}
+.sub{color:var(--ink-2);margin-top:10px;max-width:70ch}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-top:14px;box-shadow:var(--shadow)}
+.gridwrap{overflow-x:auto;margin-top:14px;border:1px solid var(--line);border-radius:12px;background:var(--surface);box-shadow:var(--shadow)}
+table{border-collapse:collapse;width:100%;min-width:760px;font-size:12.5px}
+th,td{padding:6px 7px;text-align:center;border-bottom:1px solid var(--line-soft);white-space:nowrap}
+thead th{font-family:var(--disp);font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);background:var(--raised)}
+tbody th{text-align:left;font-weight:600;background:var(--raised)}
+.tm{color:var(--ink-3);font-weight:500;font-size:11px}
+td.soft{background:var(--good-soft);color:var(--good);font-weight:600}
+td.mid{color:var(--ink-2)}
+td.hard{background:var(--bad-soft);color:var(--bad);font-weight:600}
+td.bye{background:var(--sunken);color:var(--ink-3);font-weight:600}
+td.avg{font-weight:700;border-left:2px solid var(--line)}
+.rk{display:block;font-size:10px;font-weight:700;opacity:.75}
+.posrow td{background:var(--sunken);text-align:left;padding:4px 8px}
+.chip{display:inline-block;font-family:var(--disp);font-weight:700;font-size:12px;letter-spacing:.1em;padding:1px 10px;border-radius:5px;color:var(--chip-ink)}
+.chip.qb{background:var(--qb)}.chip.rb{background:var(--rb)}.chip.wr{background:var(--wr)}.chip.te{background:var(--te)}.chip.k{background:var(--k)}.chip.dst{background:var(--dst)}
+ul{margin:8px 0 0;padding-left:20px}li{margin:7px 0}
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:13px;color:var(--ink-2)}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.foot{color:var(--ink-3);font-size:13px;margin-top:30px}
+</style>
+<div class="wrap">
+<h1>ROS <em>Schedule Grid</em></h1>
+<p class="sub">Every roster player's remaining NFL schedule, graded by what each defense has actually allowed to that position through week 8 (full PPR, Sleeper official stats). Rank 1 = most points allowed (easiest matchup), 32 = hardest. Built Wed Nov 4, post-Burden trade. League playoffs are weeks 15 to 17.</p>
+<div class="legend"><span><span class="sw" style="background:var(--good-soft);border:1px solid var(--good)"></span>Soft (1-10)</span><span><span class="sw" style="background:var(--surface);border:1px solid var(--line)"></span>Middle (11-21)</span><span><span class="sw" style="background:var(--bad-soft);border:1px solid var(--bad)"></span>Tough (22-32)</span></div>
+<div class="gridwrap"><table>
+<thead><tr><th>Player</th><th>W9</th><th>W10</th><th>W11</th><th>W12</th><th>W13</th><th>W14</th><th>W15</th><th>W16</th><th>W17</th><th>Reg avg</th><th>Playoff avg</th></tr></thead>
+<tbody>
+<tr class="posrow"><td colspan="12"><span class="chip qb">QB</span></td></tr>
+<tr><th>Trevor Lawrence <span class="tm">JAX</span></th><td class="mid">BAL<span class="rk">12</span></td><td class="soft">TEN<span class="rk">9</span></td><td class="soft">NYG<span class="rk">7</span></td><td class="soft">TEN<span class="rk">9</span></td><td class="soft">CHI<span class="rk">8</span></td><td class="hard">PIT<span class="rk">30</span></td><td class="mid">HOU<span class="rk">13</span></td><td class="soft">DAL<span class="rk">6</span></td><td class="soft">WAS<span class="rk">3</span></td><td class="avg mid">12.5</td><td class="avg soft">7.3</td></tr>
+<tr class="posrow"><td colspan="12"><span class="chip rb">RB</span></td></tr>
+<tr><th>James Cook <span class="tm">BUF</span></th><td class="hard">MIN<span class="rk">28</span></td><td class="mid">NYJ<span class="rk">15</span></td><td class="soft">MIA<span class="rk">8</span></td><td class="hard">KC<span class="rk">23</span></td><td class="hard">NE<span class="rk">26</span></td><td class="soft">GB<span class="rk">7</span></td><td class="hard">CHI<span class="rk">30</span></td><td class="soft">DEN<span class="rk">10</span></td><td class="soft">MIA<span class="rk">8</span></td><td class="avg mid">17.8</td><td class="avg mid">16.0</td></tr>
+<tr><th>Bhayshul Tuten <span class="tm">JAX</span></th><td class="hard">BAL<span class="rk">27</span></td><td class="mid">TEN<span class="rk">18</span></td><td class="mid">NYG<span class="rk">19</span></td><td class="mid">TEN<span class="rk">18</span></td><td class="hard">CHI<span class="rk">30</span></td><td class="mid">PIT<span class="rk">21</span></td><td class="mid">HOU<span class="rk">13</span></td><td class="soft">DAL<span class="rk">4</span></td><td class="hard">WAS<span class="rk">25</span></td><td class="avg hard">22.2</td><td class="avg mid">14.0</td></tr>
+<tr><th>Jonah Coleman <span class="tm">DEN</span></th><td class="soft">CAR<span class="rk">2</span></td><td class="bye">BYE</td><td class="soft">LV<span class="rk">6</span></td><td class="mid">PIT<span class="rk">21</span></td><td class="soft">MIA<span class="rk">8</span></td><td class="mid">NYJ<span class="rk">15</span></td><td class="soft">LV<span class="rk">6</span></td><td class="soft">BUF<span class="rk">3</span></td><td class="hard">NE<span class="rk">26</span></td><td class="avg mid">10.4</td><td class="avg mid">11.7</td></tr>
+<tr><th>Braelon Allen <span class="tm">NYJ</span></th><td class="hard">KC<span class="rk">23</span></td><td class="soft">BUF<span class="rk">3</span></td><td class="mid">LAC<span class="rk">11</span></td><td class="soft">MIA<span class="rk">8</span></td><td class="bye">BYE</td><td class="soft">DEN<span class="rk">10</span></td><td class="mid">ARI<span class="rk">20</span></td><td class="hard">NE<span class="rk">26</span></td><td class="hard">MIN<span class="rk">28</span></td><td class="avg mid">11.0</td><td class="avg hard">24.7</td></tr>
+<tr><th>Dylan Sampson <span class="tm">CLE</span></th><td class="soft">NO<span class="rk">1</span></td><td class="mid">HOU<span class="rk">13</span></td><td class="bye">BYE</td><td class="soft">LV<span class="rk">6</span></td><td class="hard">CIN<span class="rk">24</span></td><td class="soft">ATL<span class="rk">5</span></td><td class="mid">NYG<span class="rk">19</span></td><td class="hard">BAL<span class="rk">27</span></td><td class="soft">IND<span class="rk">9</span></td><td class="avg soft">9.8</td><td class="avg mid">18.3</td></tr>
+<tr class="posrow"><td colspan="12"><span class="chip wr">WR</span></td></tr>
+<tr><th>Luther Burden III <span class="tm">CHI</span></th><td class="hard">TB<span class="rk">25</span></td><td class="bye">BYE</td><td class="mid">NO<span class="rk">19</span></td><td class="soft">DET<span class="rk">3</span></td><td class="soft">JAX<span class="rk">6</span></td><td class="hard">MIA<span class="rk">30</span></td><td class="soft">BUF<span class="rk">4</span></td><td class="soft">GB<span class="rk">8</span></td><td class="soft">DET<span class="rk">3</span></td><td class="avg mid">16.6</td><td class="avg soft">5.0</td></tr>
+<tr><th>Jalen Coker <span class="tm">CAR</span></th><td class="hard">DEN<span class="rk">26</span></td><td class="mid">NO<span class="rk">19</span></td><td class="soft">BAL<span class="rk">9</span></td><td class="hard">TB<span class="rk">25</span></td><td class="hard">MIN<span class="rk">29</span></td><td class="mid">NO<span class="rk">19</span></td><td class="mid">CIN<span class="rk">14</span></td><td class="mid">PIT<span class="rk">16</span></td><td class="hard">SEA<span class="rk">32</span></td><td class="avg hard">21.2</td><td class="avg mid">20.7</td></tr>
+<tr><th>DJ Moore <span class="tm">BUF</span></th><td class="hard">MIN<span class="rk">29</span></td><td class="hard">NYJ<span class="rk">23</span></td><td class="hard">MIA<span class="rk">30</span></td><td class="hard">KC<span class="rk">31</span></td><td class="mid">NE<span class="rk">11</span></td><td class="soft">GB<span class="rk">8</span></td><td class="mid">CHI<span class="rk">15</span></td><td class="hard">DEN<span class="rk">26</span></td><td class="hard">MIA<span class="rk">30</span></td><td class="avg hard">22.0</td><td class="avg hard">23.7</td></tr>
+<tr><th>A.J. Brown <span class="tm">NE</span></th><td class="soft">GB<span class="rk">8</span></td><td class="soft">DET<span class="rk">3</span></td><td class="bye">BYE</td><td class="mid">LAC<span class="rk">21</span></td><td class="soft">BUF<span class="rk">4</span></td><td class="hard">MIN<span class="rk">29</span></td><td class="hard">KC<span class="rk">31</span></td><td class="hard">NYJ<span class="rk">23</span></td><td class="hard">DEN<span class="rk">26</span></td><td class="avg mid">13.0</td><td class="avg hard">26.7</td></tr>
+<tr><th>Mike Evans <span class="tm">SF</span></th><td class="soft">LV<span class="rk">10</span></td><td class="soft">DAL<span class="rk">7</span></td><td class="hard">MIN<span class="rk">29</span></td><td class="hard">SEA<span class="rk">32</span></td><td class="mid">NYG<span class="rk">17</span></td><td class="hard">LAR<span class="rk">27</span></td><td class="mid">LAC<span class="rk">21</span></td><td class="hard">KC<span class="rk">31</span></td><td class="soft">PHI<span class="rk">2</span></td><td class="avg mid">20.3</td><td class="avg mid">18.0</td></tr>
+<tr><th>Carnell Tate (IR slot) <span class="tm">TEN</span></th><td class="bye">BYE</td><td class="soft">JAX<span class="rk">6</span></td><td class="soft">DAL<span class="rk">7</span></td><td class="soft">JAX<span class="rk">6</span></td><td class="mid">WAS<span class="rk">12</span></td><td class="soft">DET<span class="rk">3</span></td><td class="hard">IND<span class="rk">24</span></td><td class="soft">LV<span class="rk">10</span></td><td class="mid">PIT<span class="rk">16</span></td><td class="avg soft">6.8</td><td class="avg mid">16.7</td></tr>
+<tr class="posrow"><td colspan="12"><span class="chip te">TE</span></td></tr>
+<tr><th>Brock Bowers <span class="tm">LV</span></th><td class="hard">SF<span class="rk">23</span></td><td class="hard">SEA<span class="rk">28</span></td><td class="soft">DEN<span class="rk">7</span></td><td class="soft">CLE<span class="rk">10</span></td><td class="bye">BYE</td><td class="hard">LAC<span class="rk">27</span></td><td class="soft">DEN<span class="rk">7</span></td><td class="mid">TEN<span class="rk">21</span></td><td class="soft">ARI<span class="rk">9</span></td><td class="avg mid">19.0</td><td class="avg mid">12.3</td></tr>
+<tr><th>Chig Okonkwo <span class="tm">WAS</span></th><td class="hard">LAR<span class="rk">26</span></td><td class="mid">NYG<span class="rk">20</span></td><td class="soft">CIN<span class="rk">8</span></td><td class="soft">ARI<span class="rk">9</span></td><td class="mid">TEN<span class="rk">21</span></td><td class="hard">HOU<span class="rk">29</span></td><td class="mid">ATL<span class="rk">16</span></td><td class="hard">MIN<span class="rk">32</span></td><td class="hard">JAX<span class="rk">25</span></td><td class="avg mid">18.8</td><td class="avg hard">24.3</td></tr>
+<tr class="posrow"><td colspan="12"><span class="chip k">K</span></td></tr>
+<tr><th>Tyler Bass <span class="tm">BUF</span></th><td class="hard">MIN<span class="rk">26</span></td><td class="hard">NYJ<span class="rk">22</span></td><td class="mid">MIA<span class="rk">19</span></td><td class="soft">KC<span class="rk">9</span></td><td class="mid">NE<span class="rk">18</span></td><td class="hard">GB<span class="rk">29</span></td><td class="hard">CHI<span class="rk">31</span></td><td class="hard">DEN<span class="rk">24</span></td><td class="mid">MIA<span class="rk">19</span></td><td class="avg mid">20.5</td><td class="avg hard">24.7</td></tr>
+<tr class="posrow"><td colspan="12"><span class="chip dst">DEF</span></td></tr>
+<tr><th>Jacksonville D/ST <span class="tm">JAX</span></th><td class="mid">BAL<span class="rk">15</span></td><td class="mid">TEN<span class="rk">12</span></td><td class="soft">NYG<span class="rk">6</span></td><td class="mid">TEN<span class="rk">12</span></td><td class="mid">CHI<span class="rk">14</span></td><td class="mid">PIT<span class="rk">13</span></td><td class="hard">HOU<span class="rk">25</span></td><td class="hard">DAL<span class="rk">30</span></td><td class="hard">WAS<span class="rk">23</span></td><td class="avg mid">12.0</td><td class="avg hard">26.0</td></tr>
+</tbody></table></div>
+<h2>What the grid says</h2>
+<div class="card"><ul>
+<li><b>Luther Burden is a playoff cheat code.</b> Weeks 15-17: BUF (4), GB (8), DET (3). A 5.0 average, the best playoff schedule on the roster. The Swift trade aged a week in one night.</li>
+<li><b>Lawrence's playoff run is nearly as good</b> (7.3: HOU, DAL 6, WAS 3). QB is settled. Skipping the Lamar stash costs nothing on this schedule.</li>
+<li><b>Coleman owns the best RB schedule on the team</b> (10.4 regular, LV 6 and BUF 3 in weeks 15-16). The grid argues for holding him through the Jonathan Taylor deadline, hard.</li>
+<li><b>DJ Moore has the worst schedule on the roster</b> (22.0 regular, 23.7 playoffs: MIA 30, KC 31, MIN 29, DEN 26, MIA 30). He is the trade-deadline sell candidate while the Buffalo name still carries value. Deadline is week 11.</li>
+<li><b>Braelon's playoff cliff is real:</b> 11.0 regular collapses to 24.7 (ARI 20, NE 26, MIN 28), with Breece Hall now Questionable to return. Start him week 10 vs BUF (3), then shop him.</li>
+<li><b>A.J. Brown returns into a feast:</b> DET (3) week 10, BUF (4) week 13, but his playoff slate is a desert (26.7). Ride him mid-season; Burden and Evans (PHI, rank 2, week 17) carry the playoffs.</li>
+<li><b>Cook's week 15 is a landmine</b> (CHI, rank 30 vs RB). Flag it now; Coleman and Sampson (NYG 19) cover that week.</li>
+<li><b>Plan streamer exits:</b> Bass faces CHI (31) and DEN (24) in the playoffs; swap kickers by week 15. JAX D/ST's playoff slate is 26.0 (DAL 30 in week 16); line up a playoff defense in advance. The open roster spot makes both easy.</li>
+<li><b>Sleeper stash note: Tate</b> (IR slot) quietly has the softest WR schedule on the team (6.8: JAX twice at rank 6, DET 3 in week 14). If he is healthy in late November, he is a legitimate December flex. Do not cut him casually.</li>
+</ul></div>
+<h2>Your fantasy schedule</h2>
+<div class="card"><ul>
+<li><b>Week 9: carrsann (6-2, 1161 PF).</b> The seeding fight. Winner likely controls the 2-seed race.</li>
+<li><b>Week 10: ChiroXC (6-2, 991 PF).</b> The softest 6-2 in football: lowest points scored of any winning team. Beatable even on your Burden + Coleman bye.</li>
+<li><b>Weeks 11-14: drbeltran90 (4-4), brivizcarra (2-6), MoneyTreeZnTDs (3-5), tinydez (2-6).</b> One real opponent (beltran, now with Swift), then a closing stretch against the league's basement. Win weeks 9-10 and the schedule hands you a top seed.</li>
+</ul></div>
+<p class="foot">Method: points allowed per game by each defense to each position, weeks 1-8, full PPR, ranked 1 (most generous) to 32 (stingiest). Byes excluded from averages. Source: Sleeper official stat feed, pulled Nov 4. <a href="weekly.html">Back to the Weekly Brief</a>.</p>
+</div>
